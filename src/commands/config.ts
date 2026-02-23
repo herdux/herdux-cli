@@ -1,0 +1,172 @@
+import type { Command } from "commander";
+import chalk from "chalk";
+import * as config from "../services/config.service.js";
+import { logger } from "../core/logger.js";
+
+const VALID_KEYS = ["host", "port", "user", "password"];
+
+export function registerConfigCommand(program: Command): void {
+  const configCmd = program
+    .command("config")
+    .description("Manage pgm configuration");
+
+  configCmd;
+  configCmd
+    .command("set <key> <value>")
+    .description("Set a default config value (host, port, user, password)")
+    .action((key: string, value: string) => {
+      if (!VALID_KEYS.includes(key)) {
+        logger.error(
+          `Invalid key "${key}". Valid keys: ${VALID_KEYS.join(", ")}`,
+        );
+        process.exit(1);
+      }
+
+      config.setDefault(key, value);
+      const displayValue = key === "password" ? "••••••" : value;
+      logger.success(
+        `Default ${chalk.cyan(key)} set to ${chalk.green(displayValue)}`,
+      );
+      logger.line(`Saved to ${chalk.gray(config.getConfigPath())}`);
+    });
+
+  configCmd;
+  configCmd
+    .command("get <key>")
+    .description("Get a config value")
+    .action((key: string) => {
+      const defaults = config.getDefault();
+      const value = (defaults as Record<string, string>)[key];
+
+      if (value === undefined) {
+        logger.warn(`No value set for "${key}"`);
+      } else {
+        const displayValue = key === "password" ? "••••••" : value;
+        console.log(`${chalk.cyan(key)}: ${displayValue}`);
+      }
+    });
+
+  configCmd;
+  configCmd
+    .command("list")
+    .alias("ls")
+    .description("Show all saved configuration")
+    .action(() => {
+      const cfg = config.loadConfig();
+
+      logger.title("📋 pgm Configuration");
+
+      const defaults = cfg.default;
+      const hasDefaults = Object.keys(defaults).length > 0;
+
+      if (hasDefaults) {
+        console.log(chalk.bold("  Default Connection:"));
+        for (const [key, value] of Object.entries(defaults)) {
+          const displayValue = key === "password" ? "••••••" : value;
+          console.log(`    ${chalk.cyan(key)}: ${displayValue}`);
+        }
+      } else {
+        console.log(chalk.gray("  No default connection configured."));
+      }
+
+      console.log();
+
+      const servers = cfg.servers;
+      const serverNames = Object.keys(servers);
+
+      if (serverNames.length > 0) {
+        console.log(chalk.bold("  Server Profiles:"));
+        for (const name of serverNames) {
+          const srv = servers[name];
+          const parts = [
+            srv.host && `host=${srv.host}`,
+            srv.port && `port=${chalk.cyan(srv.port)}`,
+            srv.user && `user=${srv.user}`,
+            srv.password && `password=••••••`,
+          ].filter(Boolean);
+          console.log(`    ${chalk.green(name)}: ${parts.join(", ")}`);
+        }
+      } else {
+        console.log(chalk.gray("  No server profiles configured."));
+      }
+
+      if (cfg.scan_ports.length > 0) {
+        console.log();
+        console.log(chalk.bold("  Custom Scan Ports:"));
+        console.log(`    ${cfg.scan_ports.join(", ")}`);
+      }
+
+      console.log();
+      console.log(chalk.gray(`  Config file: ${config.getConfigPath()}`));
+      console.log();
+    });
+
+  configCmd;
+  configCmd
+    .command("reset")
+    .description("Reset all configuration")
+    .action(() => {
+      config.resetConfig();
+      logger.success("Configuration reset successfully");
+    });
+
+  configCmd;
+  configCmd
+    .command("add-server <name>")
+    .alias("add")
+    .description(
+      "Add a named server profile (uses global --host, --port, --user, --password)",
+    )
+    .action((name: string) => {
+      const globalOpts = program.opts();
+      const serverOpts = {
+        ...(globalOpts.host && { host: globalOpts.host }),
+        ...(globalOpts.port && { port: globalOpts.port }),
+        ...(globalOpts.user && { user: globalOpts.user }),
+        ...(globalOpts.password && { password: globalOpts.password }),
+      };
+
+      if (Object.keys(serverOpts).length === 0) {
+        logger.error(
+          "Provide at least one option (--host, --port, --user, --password)",
+        );
+        process.exit(1);
+      }
+
+      config.addServer(name, serverOpts);
+      logger.success(`Server profile "${chalk.green(name)}" saved`);
+
+      const parts = [
+        serverOpts.host && `host=${serverOpts.host}`,
+        serverOpts.port && `port=${serverOpts.port}`,
+        serverOpts.user && `user=${serverOpts.user}`,
+        serverOpts.password && `password=••••••`,
+      ].filter(Boolean);
+      logger.line(parts.join(", "));
+    });
+
+  configCmd;
+  configCmd
+    .command("remove-server <name>")
+    .alias("rm")
+    .description("Remove a named server profile")
+    .action((name: string) => {
+      const removed = config.removeServer(name);
+
+      if (removed) {
+        logger.success(`Server profile "${name}" removed`);
+      } else {
+        logger.warn(`Server profile "${name}" not found`);
+      }
+    });
+
+  configCmd;
+  configCmd
+    .command("scan-ports <ports...>")
+    .alias("scan")
+    .description("Set custom ports to scan for PostgreSQL instances")
+    .action((ports: string[]) => {
+      config.setScanPorts(ports);
+      logger.success(`Scan ports set to: ${chalk.cyan(ports.join(", "))}`);
+    });
+}
