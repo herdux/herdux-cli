@@ -1,5 +1,5 @@
 {
-  "name": "herdux",
+  "name": "herdux-cli",
   "version": "0.1.1",
   "description": "Modern Database workflow CLI focused on developer experience, safety, and automation.",
   "repository": {
@@ -11,6 +11,11 @@
   "bin": {
     "herdux": "./dist/index.js"
   },
+  "files": [
+    "dist",
+    "README.md",
+    "README.pt-BR.md"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "tsx src/index.ts",

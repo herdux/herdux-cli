@@ -23,7 +23,7 @@ A fast, interactive CLI that removes friction from daily local database workflow
 ## ⚡ Quick Start
 
 ```bash
-npm install -g herdux
+npm install -g herdux-cli
 herdux doctor
 herdux list
 ```
@@ -135,7 +135,7 @@ If you manage databases locally, Herdux was created to solve your pain.
 **npm (recommended):**
 
 ```bash
-npm install -g herdux
+npm install -g herdux-cli
 ```
 
 **From source:**

@@ -23,7 +23,7 @@ Uma CLI rápida e interativa que remove a fricção dos workflows diários com b
 ## ⚡ Início Rápido
 
 ```bash
-npm install -g herdux
+npm install -g herdux-cli
 herdux doctor
 herdux list
 ```
@@ -134,7 +134,7 @@ O **Herdux** trata operações destrutivas com cuidado:
 **npm (recomendado):**
 
 ```bash
-npm install -g herdux
+npm install -g herdux-cli
 ```
 
 **Pelo código-fonte:**
