@@ -10,7 +10,7 @@ export function registerListCommand(program: Command): void {
   program
     .command("list")
     .alias("ls")
-    .description("List all PostgreSQL databases")
+    .description("List all databases")
     .option(
       "-S, --size",
       "Calculate and include database sizes (sorted from largest to smallest)",

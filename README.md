@@ -1,17 +1,21 @@
 🇺🇸 English | 🇧🇷 [Português](./README.pt-BR.md)
 
-# 🐘 herdux — PostgreSQL Manager CLI
+# Herdux — Database Workflow CLI
 
-A modern, fast, and interactive CLI designed to eliminate Developer Experience (DX) friction when managing local PostgreSQL databases, especially in environments with massive datasets, multiple server instances, and heavy daily operations.
+<p align="center">
+  <strong>Infrastructure-grade power. Developer-grade experience.</strong>
+</p>
+
+A fast, interactive CLI that removes friction from daily local database workflows, especially when juggling multiple instances and large datasets.
 
 ![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Node](https://img.shields.io/badge/node-18%2B-43853d.svg)
 
-> Designed primarily for local and development environments.
+> Optimized for local and development environments. Production use is supported with explicit configuration.
 
 <p align="center">
-  <img src=".github/demo.png" alt="herdux terminal demo" width="720" />
+  <img src=".github/herdux.gif" alt="herdux terminal gif" width="1220" />
 </p>
 
 ---
@@ -28,11 +32,11 @@ That's it. You're managing databases.
 
 ---
 
-## Why herdux?
+## Why Herdux?
 
-Managing PostgreSQL through raw commands is repetitive, error-prone, and painful at scale.
+Managing local databases through raw bash scripts or binaries is repetitive, error-prone, and painful at scale.
 
-### ❌ Without herdux
+### ❌ Without Herdux
 
 ```bash
 # Backup a database
@@ -48,42 +52,33 @@ pg_restore -U postgres -h localhost -p 5416 -d mydb --clean --if-exists ./backup
 psql --version && pg_dump --version && pg_restore --version
 ```
 
-### ✅ With herdux
+### ✅ With Herdux
 
 ```bash
 herdux backup mydb --drop --yes        # Backup + drop in one shot
-herdux restore ./backups/mydb.dump --db mydb   # Auto-detects format
+herdux restore ./backups/mydb.dump --db mydb   # Auto-creates DB if missing & detects format
 herdux clean                            # Multi-select and batch-drop databases
 herdux doctor                           # Full system health check
 ```
 
-One command. Fewer flags. Fewer mistakes.
+Fewer flags. Fewer mistakes. Zero terminal fatigue.
 
 ---
 
-## 💡 Philosophy
+## 🎯 Who is Herdux for?
 
-**Herdux** combines *herd* and *UX* — delivering a better developer experience when managing your PostgreSQL database clusters. The name reflects our focus on improving the developer experience of managing database herds.
+**Herdux** was built *for developers, by developers*. 
 
-herdux follows three principles:
+It was born from the daily frustration of constantly having to restore backups to test specific states, drop corrupted databases during development, and juggle raw database binaries.
 
-- **Safety first** — Never drops data without explicit confirmation or a verified backup.
-- **Explicit over implicit** — Connection resolution follows a strict, documented priority. No magic.
-- **Developer workflow optimization** — Every command is designed to save you from repetitive terminal work.
+It is specifically designed for developers who:
+- Manage local infrastructures and need to check disk sizes before seeding new databases.
+- Want to quickly clone, seed, and reset databases without reading `man` pages.
+- Need safe backup & restore workflows that don't rely on fragile bash scripts.
+- Prefer terminal-first tooling.
+- Want predictable connection resolution without hidden magic.
 
----
-
-## 🔒 Safety
-
-`herdux` handles destructive operations with care:
-
-- **Never drops a database** unless explicit confirmation is given
-- **Aborts the entire operation** if a safety backup fails during `herdux clean`
-- **Validates `pg_dump` exit codes** before considering a backup successful
-- **Requires `--drop` flag** intentionally — dropping is never the default
-- **`--yes` must be combined with `--drop`** — cannot skip confirmation alone
-
-> If you request a backup before dropping and that backup fails, herdux stops immediately. No data is lost.
+If you manage databases locally, Herdux was created to solve your pain.
 
 ---
 
@@ -95,6 +90,33 @@ herdux follows three principles:
 - **🩺 System Diagnostics** — One-command health check verifying binaries, authentication, and connectivity.
 - **⚙️ Persistent Profiles** — Save named server configurations. Switch between environments with `-s pg16`.
 - **🎯 Smart Connection Resolution** — Explicit CLI flags → profiles → saved defaults → auto-discovery. Always predictable.
+
+---
+
+## 💡 Philosophy
+
+**Herdux** combines *herd* and *UX* — delivering a better developer experience when managing your local database clusters. The name reflects our focus on improving the developer experience of managing database herds.
+
+**Herdux** follows three principles:
+
+- **Safety first** — Never drops data without explicit confirmation or a verified backup.
+- **Explicit over implicit** — Connection resolution follows a strict, documented priority. No magic.
+- **Developer workflow optimization** — Every command is designed to save you from repetitive terminal work.
+
+---
+
+## 🔒 Safety
+
+**Herdux** handles destructive operations with care:
+
+- **Never drops a database** unless explicit confirmation is given
+- **Aborts the entire operation** if a safety backup fails during `herdux clean`
+- **Validates `pg_dump` exit codes** before considering a backup successful
+- **Requires `--drop` flag** intentionally — dropping is never the default
+- **`--yes` must be combined with `--drop`** — cannot skip confirmation alone
+
+> If you request a backup before dropping and that backup fails, **Herdux** stops immediately. No data is lost.
+
 
 ---
 
@@ -119,8 +141,8 @@ npm install -g herdux
 **From source:**
 
 ```bash
-git clone https://github.com/your-user/cli-herdux.git
-cd cli-herdux
+git clone https://github.com/eduardozaniboni/herdux.git
+cd herdux
 npm install
 npm run build
 npm link
@@ -259,7 +281,7 @@ herdux config set port 5432
 
 ### Named Server Profiles
 
-Manage multiple PostgreSQL instances effortlessly:
+Manage multiple database instances effortlessly:
 
 ```bash
 herdux config add pg16 --port 5416
@@ -287,7 +309,7 @@ herdux config reset          # Clear all configuration
 
 ## 🔌 Connection Priority
 
-When resolving how to connect, `herdux` follows a strict, predictable priority order:
+When resolving how to connect, **Herdux** follows a strict, predictable priority order:
 
 | Priority | Source | Example |
 |---|---|---|
@@ -302,29 +324,31 @@ This means explicit input always wins. No surprises.
 
 ## 🤔 Why not pgAdmin?
 
-pgAdmin is a powerful GUI tool for database administration. `herdux` is not a replacement for it.
-
-`herdux` is optimized for **terminal-first developer workflows** — quick operations, scripting, CI pipelines, and managing multiple local instances without leaving the terminal.
+**Herdux** is not a GUI replacement.
+It’s a workflow accelerator for developers who live in the terminal.
 
 No GUI. No overhead. Just speed.
 
 ---
 
+## 🧠 Design Principles
+
+- No hidden defaults.
+- No destructive magic.
+- Deterministic connection resolution.
+- Explicit and composable commands.
+
+---
+
 ## 🐳 Docker Support (Coming Soon)
 
-`herdux` will be able to detect and interact with PostgreSQL instances running inside Docker containers — listing, connecting, and managing them as naturally as local instances.
+**Herdux** will be able to detect and interact with PostgreSQL instances running inside Docker containers — listing, connecting, and managing them as naturally as local instances.
 
 ---
 
 ## 🗺 Roadmap
 
-- [x] Backup & restore
-- [x] Profiles
-- [x] Doctor
-- [ ] Docker integration
-- [ ] Encrypted backups
-- [ ] TTL cleanup
-- [ ] Windows binary build
+See [ROADMAP.md](./ROADMAP.md) for our detailed future plans, including Docker integration and encrypted backups.
 
 ---
 
@@ -333,8 +357,8 @@ No GUI. No overhead. Just speed.
 PRs are welcome! Please open an issue first to discuss major changes.
 
 ```bash
-git clone https://github.com/your-user/cli-herdux.git
-cd cli-herdux
+git clone https://github.com/eduardozaniboni/herdux.git
+cd herdux
 npm install
 npm run dev
 ```

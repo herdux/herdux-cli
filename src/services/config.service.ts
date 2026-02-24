@@ -17,7 +17,7 @@ export interface ServerProfile extends ConnectionOptions {
 }
 
 export interface HerduxConfig {
-  default: ConnectionOptions;
+  default: ConnectionOptions & { output?: string };
   servers: Record<string, ConnectionOptions>;
   scan_ports: string[];
 }
@@ -56,7 +56,7 @@ export function saveConfig(config: HerduxConfig): void {
   writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2), "utf-8");
 }
 
-export function getDefault(): ConnectionOptions {
+export function getDefault(): ConnectionOptions & { output?: string } {
   const config = loadConfig();
   return config.default;
 }

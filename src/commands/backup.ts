@@ -8,17 +8,19 @@ import {
 } from "../services/environment.service.js";
 import * as backup from "../services/backup.service.js";
 import * as postgres from "../services/postgres.service.js";
+import * as config from "../services/config.service.js";
 import type { ConnectionOptions } from "../services/postgres.service.js";
 import { resolveConnectionOptions } from "../utils/resolve-connection.js";
+import { join } from "path";
+import { homedir } from "os";
 
 export function registerBackupCommand(program: Command): void {
   program
     .command("backup <database>")
-    .description("Create a backup of a PostgreSQL database")
+    .description("Create a backup of a database")
     .option(
       "-o, --output <dir>",
-      "Output directory for the backup",
-      "./backups",
+      "Output directory for the backup (overrides global config)",
     )
     .option("-d, --drop", "Ask to drop the database after a successful backup")
     .option("-y, --yes", "Skip confirmation when dropping (requires --drop)")
@@ -31,7 +33,7 @@ export function registerBackupCommand(program: Command): void {
       async (
         database: string,
         cmdOpts: {
-          output: string;
+          output?: string;
           drop?: boolean;
           yes?: boolean;
           format: string;
@@ -56,11 +58,19 @@ export function registerBackupCommand(program: Command): void {
             process.exit(1);
           }
 
+          const configDefaults = config.getDefault();
+
+          let finalOutputDir = cmdOpts.output;
+          if (!finalOutputDir) {
+            finalOutputDir =
+              configDefaults.output || join(homedir(), ".herdux", "backups");
+          }
+
           const spinner = ora(`Generating backup for "${database}"...`).start();
 
           const outputPath = await backup.backupDatabase(
             database,
-            cmdOpts.output,
+            finalOutputDir,
             opts,
             cmdOpts.format as "custom" | "plain",
           );

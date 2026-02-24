@@ -15,12 +15,13 @@ const program = new Command();
 
 program
   .name("herdux")
-  .description("🐘 A modern CLI to PostgreSQL management")
-  .version("0.1.0")
-  .option("-H, --host <host>", "PostgreSQL host")
-  .option("-p, --port <port>", "PostgreSQL port (auto-detected if omitted)")
-  .option("-U, --user <user>", "PostgreSQL user")
-  .option("-W, --password <password>", "PostgreSQL password")
+  .helpCommand(false)
+  .description("A modern CLI to Database management")
+  .version("0.1.1")
+  .option("-H, --host <host>", "Database host")
+  .option("-p, --port <port>", "Database port (auto-detected if omitted)")
+  .option("-U, --user <user>", "Database user")
+  .option("-W, --password <password>", "Database password")
   .option("-s, --server <name>", "Use a named server profile from config");
 
 registerVersionCommand(program);

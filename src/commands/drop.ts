@@ -10,7 +10,7 @@ import { resolveConnectionOptions } from "../utils/resolve-connection.js";
 export function registerDropCommand(program: Command): void {
   program
     .command("drop <name>")
-    .description("Drop a PostgreSQL database")
+    .description("Drop a database")
     .option("-y, --yes", "Skip confirmation prompt")
     .action(async (name: string, cmdOpts: { yes?: boolean }) => {
       try {

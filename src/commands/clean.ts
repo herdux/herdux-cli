@@ -8,8 +8,11 @@ import {
 } from "../services/environment.service.js";
 import * as postgres from "../services/postgres.service.js";
 import * as backup from "../services/backup.service.js";
+import * as config from "../services/config.service.js";
 import type { ConnectionOptions } from "../services/postgres.service.js";
 import { resolveConnectionOptions } from "../utils/resolve-connection.js";
+import { join } from "path";
+import { homedir } from "os";
 
 export function registerCleanCommand(program: Command): void {
   program
@@ -70,13 +73,18 @@ export function registerCleanCommand(program: Command): void {
 
         if (backupResponse.backupFirst) {
           await checkPgDump();
-          console.log(chalk.cyan("\n📦 Starting backups..."));
+
+          const configDefaults = config.getDefault();
+          const backupDir =
+            configDefaults.output || join(homedir(), ".herdux", "backups");
+
+          console.log(chalk.cyan("\nStarting backups..."));
           for (const db of selectedDbs) {
             spinner = ora(`Backing up "${db}"...`).start();
             try {
               const outObj = await backup.backupDatabase(
                 db,
-                "./backups",
+                backupDir,
                 opts,
                 "custom",
               );

@@ -3,17 +3,20 @@ import chalk from "chalk";
 import * as config from "../services/config.service.js";
 import { logger } from "../core/logger.js";
 
-const VALID_KEYS = ["host", "port", "user", "password"];
+const VALID_KEYS = ["host", "port", "user", "password", "output"];
 
 export function registerConfigCommand(program: Command): void {
   const configCmd = program
     .command("config")
-    .description("Manage herdux configuration");
+    .helpCommand(false)
+    .description("Manage Herdux configuration");
 
   configCmd;
   configCmd
     .command("set <key> <value>")
-    .description("Set a default config value (host, port, user, password)")
+    .description(
+      "Set a default config value (host, port, user, password, output)",
+    )
     .action((key: string, value: string) => {
       if (!VALID_KEYS.includes(key)) {
         logger.error(
@@ -54,13 +57,13 @@ export function registerConfigCommand(program: Command): void {
     .action(() => {
       const cfg = config.loadConfig();
 
-      logger.title("📋 herdux Configuration");
+      logger.title("Herdux Configuration");
 
       const defaults = cfg.default;
       const hasDefaults = Object.keys(defaults).length > 0;
 
       if (hasDefaults) {
-        console.log(chalk.bold("  Default Connection:"));
+        console.log(chalk.bold("Default Connection:"));
         for (const [key, value] of Object.entries(defaults)) {
           const displayValue = key === "password" ? "••••••" : value;
           console.log(`    ${chalk.cyan(key)}: ${displayValue}`);
@@ -137,7 +140,7 @@ export function registerConfigCommand(program: Command): void {
       logger.success(`Server profile "${chalk.green(name)}" saved`);
 
       const parts = [
-        serverOpts.host && `host=${serverOpts.host}`,
+        serverOpts.host && ` host=${serverOpts.host}`,
         serverOpts.port && `port=${serverOpts.port}`,
         serverOpts.user && `user=${serverOpts.user}`,
         serverOpts.password && `password=••••••`,
@@ -164,7 +167,7 @@ export function registerConfigCommand(program: Command): void {
   configCmd
     .command("scan-ports <ports...>")
     .alias("scan")
-    .description("Set custom ports to scan for PostgreSQL instances")
+    .description("Set custom ports to scan for database instances")
     .action((ports: string[]) => {
       config.setScanPorts(ports);
       logger.success(`Scan ports set to: ${chalk.cyan(ports.join(", "))}`);

@@ -111,7 +111,7 @@ export async function resolveConnectionOptions(
     return { ...merged, port: instance.port };
   }
 
-  spinner.succeed(`Found ${instances.length} running servers`);
+  spinner.succeed(`  Found ${instances.length} running servers`);
 
   const choices = instances.map((inst) => ({
     title: `Port ${inst.port} — ${inst.version}`,

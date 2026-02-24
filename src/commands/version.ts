@@ -7,13 +7,13 @@ import * as postgres from "../services/postgres.service.js";
 export function registerVersionCommand(program: Command): void {
   program
     .command("version")
-    .description("Show PostgreSQL client and server versions")
+    .description("Show Database client and server versions")
     .action(async () => {
       try {
         await checkPostgresClient();
 
         const clientVersion = await postgres.getVersion();
-        console.log(chalk.bold.cyan("\n🐘 PostgreSQL Client"));
+        console.log(chalk.bold.cyan("\n--- PostgreSQL Client ---"));
         console.log(`   ${clientVersion}`);
 
         const opts = program.opts();
@@ -29,7 +29,7 @@ export function registerVersionCommand(program: Command): void {
         } else {
           spinner.succeed(`Found ${instances.length} running server(s)\n`);
 
-          console.log(chalk.bold.cyan("🖥️  Running Servers"));
+          console.log(chalk.bold.cyan("--- Running Servers ---"));
           for (const instance of instances) {
             const portBadge = chalk.bgGreen.black(` :${instance.port} `);
             console.log(`   ${portBadge} ${instance.version}`);
@@ -37,7 +37,7 @@ export function registerVersionCommand(program: Command): void {
           console.log();
         }
 
-        console.log(chalk.bold.cyan("📦 herdux CLI"));
+        console.log(chalk.bold.cyan("--- Herdux CLI ---"));
         console.log(`   v${program.version()}\n`);
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);

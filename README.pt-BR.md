@@ -1,17 +1,21 @@
 🇧🇷 Português | 🇺🇸 [English](./README.md)
 
-# 🐘 herdux — PostgreSQL Manager CLI
+# Herdux — Database Workflow CLI
 
-Uma CLI moderna, rápida e interativa projetada para eliminar fricções de Developer Experience (DX) ao gerenciar bancos de dados PostgreSQL locais, especialmente em ambientes com datasets massivos, múltiplas instâncias de servidor e operações diárias pesadas.
+<p align="center">
+  <strong>Infrastructure-grade power. Developer-grade experience.</strong>
+</p>
+
+Uma CLI rápida e interativa que remove a fricção dos workflows diários com bancos de dados locais, especialmente ao lidar com múltiplas instâncias e grandes datasets.
 
 ![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Node](https://img.shields.io/badge/node-18%2B-43853d.svg)
 
-> Projetado principalmente para ambientes locais e de desenvolvimento.
+> Otimizado para ambientes locais e de desenvolvimento. O uso em produção é suportado com configuração explícita.
 
 <p align="center">
-  <img src=".github/demo.png" alt="herdux terminal demo" width="720" />
+  <img src=".github/herdux.gif" alt="herdux terminal gif" width="1220" />
 </p>
 
 ---
@@ -28,11 +32,11 @@ herdux list
 
 ---
 
-## Por que herdux?
+## Por que Herdux?
 
-Gerenciar PostgreSQL através de comandos crus é repetitivo, propenso a erros e doloroso em escala.
+Gerenciar bancos de dados locais através de scripts bash ou binários crus é repetitivo, propenso a erros e doloroso em escala.
 
-### ❌ Sem herdux
+### ❌ Sem Herdux
 
 ```bash
 # Fazer backup de um banco
@@ -48,42 +52,33 @@ pg_restore -U postgres -h localhost -p 5416 -d mydb --clean --if-exists ./backup
 psql --version && pg_dump --version && pg_restore --version
 ```
 
-### ✅ Com herdux
+### ✅ Com Herdux
 
 ```bash
 herdux backup mydb --drop --yes        # Backup + drop em um comando
-herdux restore ./backups/mydb.dump --db mydb   # Detecta o formato automaticamente
+herdux restore ./backups/mydb.dump --db mydb   # Cria o banco (se faltar) e detecta o formato
 herdux clean                            # Multi-seleção e batch-drop de bancos
 herdux doctor                           # Verificação completa do sistema
 ```
 
-Um comando. Menos flags. Menos erros.
+Menos flags. Menos erros. Zero fadiga de terminal.
 
 ---
 
-## 💡 Filosofia
+## 🎯 Para quem é o Herdux?
 
-**Herdux** combina *herd* (manada) e *UX* — entregando uma melhor Developer Experience ao gerenciar seus clusters de banco de dados PostgreSQL. O nome reflete nosso foco em melhorar a experiência de desenvolvimento ao gerenciar "manadas" de bancos de dados.
+O **Herdux** foi construído *por desenvolvedores, para desenvolvedores*. 
 
-O herdux segue três princípios:
+Ele nasceu da frustração diária de ter que constantemente restaurar backups para testar um estado específico, dropar bancos corrompidos durante o desenvolvimento e lidar com binários crus de bancos de dados toda hora.
 
-- **Segurança primeiro** — Nunca apaga dados sem confirmação explícita ou um backup verificado.
-- **Explícito sobre implícito** — A resolução de conexão segue uma prioridade estrita e documentada. Sem mágica.
-- **Otimização de workflow** — Cada comando é projetado para te salvar de tarefas repetitivas no terminal.
+Ele é especificamente projetado para desenvolvedores que:
+- Gerenciam infraestruturas locais e precisam verificar o tamanho dos discos antes de popular novos bancos.
+- Querem clonar, popular (seed) e resetar bancos de dados rapidamente sem precisar ler documentações complexas.
+- Precisam de fluxos seguros de backup & restore que não dependam de scripts bash frágeis.
+- Preferem ferramentas focadas no terminal (terminal-first).
+- Querem resolução previsível de conexões sem mágicas ocultas.
 
----
-
-## 🔒 Segurança
-
-O `herdux` trata operações destrutivas com cuidado:
-
-- **Nunca dropa um banco** sem confirmação explícita
-- **Aborta toda a operação** se um backup de segurança falhar durante o `herdux clean`
-- **Valida códigos de saída do `pg_dump`** antes de considerar um backup bem-sucedido
-- **Requer a flag `--drop`** intencionalmente — dropar nunca é o padrão
-- **`--yes` deve ser combinado com `--drop`** — não é possível pular confirmação sozinho
-
-> Se você solicitar um backup antes de dropar e esse backup falhar, o herdux para imediatamente. Nenhum dado é perdido.
+Se você gerencia bancos de dados localmente e compartilha dessa dor, o Herdux foi criado para você.
 
 ---
 
@@ -95,6 +90,32 @@ O `herdux` trata operações destrutivas com cuidado:
 - **🩺 Diagnóstico do Sistema** — Verificação completa de saúde com um único comando: binários, autenticação e conectividade.
 - **⚙️ Perfis Persistentes** — Salve configurações de servidor nomeadas. Alterne entre ambientes com `-s pg16`.
 - **🎯 Resolução Inteligente de Conexão** — Flags CLI explícitas → perfis → padrões salvos → auto-descoberta. Sempre previsível.
+
+---
+
+## 💡 Filosofia
+
+**Herdux** combina *herd* (manada/rebanho) e *UX* — entregando uma melhor Developer Experience ao gerenciar seus clusters de bancos de dados. O nome reflete nosso foco em melhorar a experiência de desenvolvimento ao gerenciar "manadas" de bancos.
+
+O **Herdux** segue três princípios:
+
+- **Segurança primeiro** — Nunca apaga dados sem confirmação explícita ou um backup verificado.
+- **Explícito sobre implícito** — A resolução de conexão segue uma prioridade estrita e documentada. Sem mágica.
+- **Otimização de workflow** — Cada comando é projetado para te salvar de tarefas repetitivas no terminal.
+
+---
+
+## 🔒 Segurança
+
+O **Herdux** trata operações destrutivas com cuidado:
+
+- **Nunca dropa um banco** sem confirmação explícita
+- **Aborta toda a operação** se um backup de segurança falhar durante o `herdux clean`
+- **Valida códigos de saída do `pg_dump`** antes de considerar um backup bem-sucedido
+- **Requer a flag `--drop`** intencionalmente — dropar nunca é o padrão
+- **`--yes` deve ser combinado com `--drop`** — não é possível pular confirmação sozinho
+
+> Se você solicitar um backup antes de dropar e esse backup falhar, o **Herdux** para imediatamente. Nenhum dado é perdido.
 
 ---
 
@@ -119,8 +140,8 @@ npm install -g herdux
 **Pelo código-fonte:**
 
 ```bash
-git clone https://github.com/your-user/cli-herdux.git
-cd cli-herdux
+git clone https://github.com/herdux/herdux.git
+cd herdux
 npm install
 npm run build
 npm link
@@ -259,7 +280,7 @@ herdux config set port 5432
 
 ### Perfis de Servidor Nomeados
 
-Gerencie múltiplas instâncias PostgreSQL sem esforço:
+Gerencie múltiplas instâncias de banco de dados sem esforço:
 
 ```bash
 herdux config add pg16 --port 5416
@@ -287,7 +308,7 @@ herdux config reset          # Limpa toda a configuração
 
 ## 🔌 Prioridade de Conexão
 
-Ao resolver como se conectar, o `herdux` segue uma ordem de prioridade estrita e previsível:
+Ao resolver como se conectar, o **Herdux** segue uma ordem de prioridade estrita e previsível:
 
 | Prioridade | Fonte | Exemplo |
 |---|---|---|
@@ -302,29 +323,31 @@ Isso significa que a entrada explícita sempre vence. Sem surpresas.
 
 ## 🤔 Por que não pgAdmin?
 
-O pgAdmin é uma ferramenta GUI poderosa para administração de bancos de dados. O `herdux` não é um substituto para ele.
-
-O `herdux` é otimizado para **workflows de desenvolvimento focados no terminal** — operações rápidas, scripting, pipelines de CI e gerenciamento de múltiplas instâncias locais sem sair do terminal.
+O **Herdux** não é um substituto de GUI.
+É um acelerador de workflow para desenvolvedores que vivem no terminal.
 
 Sem GUI. Sem overhead. Só velocidade.
 
 ---
 
+## 🧠 Princípios de Design
+
+- Sem padrões ocultos (hidden defaults).
+- Sem mágicas destrutivas.
+- Resolução de conexão determinística.
+- Comandos explícitos e combináveis.
+
+---
+
 ## 🐳 Suporte Docker (Em Breve)
 
-O `herdux` poderá detectar e interagir com instâncias PostgreSQL rodando dentro de containers Docker — listando, conectando e gerenciando-as tão naturalmente quanto instâncias locais.
+O **Herdux** poderá detectar e interagir com instâncias PostgreSQL rodando dentro de containers Docker — listando, conectando e gerenciando-as tão naturalmente quanto instâncias locais.
 
 ---
 
 ## 🗺 Roadmap
 
-- [x] Backup & restore
-- [x] Perfis
-- [x] Doctor
-- [ ] Integração Docker
-- [ ] Backups criptografados
-- [ ] Limpeza com TTL
-- [ ] Build binário Windows
+Consulte o [ROADMAP.md](./ROADMAP.md) para ver nossos planos futuros detalhados, incluindo integração com Docker e backups criptografados.
 
 ---
 
@@ -333,8 +356,8 @@ O `herdux` poderá detectar e interagir com instâncias PostgreSQL rodando dentr
 PRs são bem-vindas! Por favor, abra uma issue primeiro para discutir mudanças significativas.
 
 ```bash
-git clone https://github.com/your-user/cli-herdux.git
-cd cli-herdux
+git clone https://github.com/herdux/herdux.git
+cd herdux
 npm install
 npm run dev
 ```

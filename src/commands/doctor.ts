@@ -19,9 +19,11 @@ async function checkBin(
 export function registerDoctorCommand(program: Command): void {
   program
     .command("doctor")
-    .description("Check system health and PostgreSQL dependencies")
+    .description("Check system health and database dependencies")
     .action(async () => {
-      console.log(chalk.bold("\n🩺 herdux Doctor - System Health Check\n"));
+      console.log(
+        chalk.bold("\n--- Herdux Doctor - System Health Check ---\n"),
+      );
 
       const rawOpts = program.opts();
       const opts = await resolveConnectionOptions(
@@ -110,7 +112,7 @@ export function registerDoctorCommand(program: Command): void {
       if (psqlCheck.ok && dumpCheck.ok && restoreCheck.ok) {
         console.log(
           chalk.green(
-            "✔ Your system is fully equipped to run herdux commands!",
+            "✔ Your system is fully equipped to run Herdux commands!",
           ),
         );
       } else {

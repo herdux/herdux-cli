@@ -9,7 +9,7 @@ import { resolveConnectionOptions } from "../utils/resolve-connection.js";
 export function registerCreateCommand(program: Command): void {
   program
     .command("create <name>")
-    .description("Create a new PostgreSQL database")
+    .description("Create a new database")
     .action(async (name: string) => {
       try {
         await checkPostgresClient();

@@ -113,11 +113,15 @@ export async function restoreDatabase(
       timeout: 0,
     });
 
-    // pg_restore returns exit code 1 for non-fatal warnings (e.g. "role does not exist")
-    if (result.exitCode > 1) {
-      throw new Error(
-        `Restore failed. The file might not be a valid custom-format backup (pg_dump -Fc): ${result.stderr}`,
-      );
+    // Exit code 1 = Fatal Error. Exit code 2 = Non-fatal warnings (e.g. role does not exist)
+    if (result.exitCode === 1) {
+      throw new Error(`Restore failed with a fatal error: ${result.stderr}`);
+    } else if (result.exitCode > 1) {
+      // In PostgreSQL 15+, exit code 2 is warning.
+      // We don't throw, but it's good to let the user know if there was serious stderr.
+      if (result.stderr.toLowerCase().includes("fatal")) {
+        throw new Error(`Restore failed: ${result.stderr}`);
+      }
     }
   }
 }
