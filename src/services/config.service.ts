@@ -9,20 +9,20 @@ import { join } from "path";
 import { homedir } from "os";
 import type { ConnectionOptions } from "./postgres.service.js";
 
-const CONFIG_DIR = join(homedir(), ".pgm");
+const CONFIG_DIR = join(homedir(), ".herdux");
 const CONFIG_FILE = join(CONFIG_DIR, "config.json");
 
 export interface ServerProfile extends ConnectionOptions {
   name?: string;
 }
 
-export interface PgmConfig {
+export interface HerduxConfig {
   default: ConnectionOptions;
   servers: Record<string, ConnectionOptions>;
   scan_ports: string[];
 }
 
-function getEmptyConfig(): PgmConfig {
+function getEmptyConfig(): HerduxConfig {
   return {
     default: {},
     servers: {},
@@ -30,7 +30,7 @@ function getEmptyConfig(): PgmConfig {
   };
 }
 
-export function loadConfig(): PgmConfig {
+export function loadConfig(): HerduxConfig {
   if (!existsSync(CONFIG_FILE)) {
     return getEmptyConfig();
   }
@@ -48,7 +48,7 @@ export function loadConfig(): PgmConfig {
   }
 }
 
-export function saveConfig(config: PgmConfig): void {
+export function saveConfig(config: HerduxConfig): void {
   if (!existsSync(CONFIG_DIR)) {
     mkdirSync(CONFIG_DIR, { recursive: true });
   }

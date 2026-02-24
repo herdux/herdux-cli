@@ -1,6 +1,6 @@
 🇧🇷 Português | 🇺🇸 [English](./README.md)
 
-# 🐘 pgm — PostgreSQL Manager CLI
+# 🐘 herdux — PostgreSQL Manager CLI
 
 Uma CLI moderna, rápida e interativa projetada para eliminar fricções de Developer Experience (DX) ao gerenciar bancos de dados PostgreSQL locais, especialmente em ambientes com datasets massivos, múltiplas instâncias de servidor e operações diárias pesadas.
 
@@ -11,7 +11,7 @@ Uma CLI moderna, rápida e interativa projetada para eliminar fricções de Deve
 > Projetado principalmente para ambientes locais e de desenvolvimento.
 
 <p align="center">
-  <img src=".github/demo.png" alt="pgm terminal demo" width="720" />
+  <img src=".github/demo.png" alt="herdux terminal demo" width="720" />
 </p>
 
 ---
@@ -19,20 +19,20 @@ Uma CLI moderna, rápida e interativa projetada para eliminar fricções de Deve
 ## ⚡ Início Rápido
 
 ```bash
-npm install -g pgm
-pgm doctor
-pgm list
+npm install -g herdux
+herdux doctor
+herdux list
 ```
 
 É só isso. Você já está gerenciando bancos de dados.
 
 ---
 
-## Por que pgm?
+## Por que herdux?
 
 Gerenciar PostgreSQL através de comandos crus é repetitivo, propenso a erros e doloroso em escala.
 
-### ❌ Sem pgm
+### ❌ Sem herdux
 
 ```bash
 # Fazer backup de um banco
@@ -48,13 +48,13 @@ pg_restore -U postgres -h localhost -p 5416 -d mydb --clean --if-exists ./backup
 psql --version && pg_dump --version && pg_restore --version
 ```
 
-### ✅ Com pgm
+### ✅ Com herdux
 
 ```bash
-pgm backup mydb --drop --yes        # Backup + drop em um comando
-pgm restore ./backups/mydb.dump --db mydb   # Detecta o formato automaticamente
-pgm clean                            # Multi-seleção e batch-drop de bancos
-pgm doctor                           # Verificação completa do sistema
+herdux backup mydb --drop --yes        # Backup + drop em um comando
+herdux restore ./backups/mydb.dump --db mydb   # Detecta o formato automaticamente
+herdux clean                            # Multi-seleção e batch-drop de bancos
+herdux doctor                           # Verificação completa do sistema
 ```
 
 Um comando. Menos flags. Menos erros.
@@ -63,7 +63,9 @@ Um comando. Menos flags. Menos erros.
 
 ## 💡 Filosofia
 
-O pgm segue três princípios:
+**Herdux** combina *herd* (manada) e *UX* — entregando uma melhor Developer Experience ao gerenciar seus clusters de banco de dados PostgreSQL. O nome reflete nosso foco em melhorar a experiência de desenvolvimento ao gerenciar "manadas" de bancos de dados.
+
+O herdux segue três princípios:
 
 - **Segurança primeiro** — Nunca apaga dados sem confirmação explícita ou um backup verificado.
 - **Explícito sobre implícito** — A resolução de conexão segue uma prioridade estrita e documentada. Sem mágica.
@@ -73,15 +75,15 @@ O pgm segue três princípios:
 
 ## 🔒 Segurança
 
-O `pgm` trata operações destrutivas com cuidado:
+O `herdux` trata operações destrutivas com cuidado:
 
 - **Nunca dropa um banco** sem confirmação explícita
-- **Aborta toda a operação** se um backup de segurança falhar durante o `pgm clean`
+- **Aborta toda a operação** se um backup de segurança falhar durante o `herdux clean`
 - **Valida códigos de saída do `pg_dump`** antes de considerar um backup bem-sucedido
 - **Requer a flag `--drop`** intencionalmente — dropar nunca é o padrão
 - **`--yes` deve ser combinado com `--drop`** — não é possível pular confirmação sozinho
 
-> Se você solicitar um backup antes de dropar e esse backup falhar, o pgm para imediatamente. Nenhum dado é perdido.
+> Se você solicitar um backup antes de dropar e esse backup falhar, o herdux para imediatamente. Nenhum dado é perdido.
 
 ---
 
@@ -102,7 +104,7 @@ O `pgm` trata operações destrutivas com cuidado:
 - **Ferramentas cliente PostgreSQL** (`psql`, `pg_dump`, `pg_restore`) instaladas e disponíveis no `PATH`
 
 > [!TIP]
-> Execute `pgm doctor` após a instalação para verificar se tudo está configurado corretamente.
+> Execute `herdux doctor` após a instalação para verificar se tudo está configurado corretamente.
 
 ---
 
@@ -111,14 +113,14 @@ O `pgm` trata operações destrutivas com cuidado:
 **npm (recomendado):**
 
 ```bash
-npm install -g pgm
+npm install -g herdux
 ```
 
 **Pelo código-fonte:**
 
 ```bash
-git clone https://github.com/your-user/cli-pgm.git
-cd cli-pgm
+git clone https://github.com/your-user/cli-herdux.git
+cd cli-herdux
 npm install
 npm run build
 npm link
@@ -128,15 +130,15 @@ npm link
 
 ## 🛠️ Comandos
 
-### `pgm version`
+### `herdux version`
 
 Mostra a versão da CLI e a versão do servidor PostgreSQL conectado.
 
 ```bash
-pgm version
+herdux version
 ```
 
-### `pgm doctor`
+### `herdux doctor`
 
 Executa uma verificação completa de saúde do sistema:
 
@@ -145,18 +147,18 @@ Executa uma verificação completa de saúde do sistema:
 - Testa autenticação contra o servidor alvo
 
 ```bash
-pgm doctor
+herdux doctor
 ```
 
 ---
 
-### 📋 `pgm list`
+### 📋 `herdux list`
 
 Lista todos os bancos de dados no servidor conectado.
 
 ```bash
-pgm list              # Listagem rápida (nome, owner, encoding)
-pgm ls --size         # Inclui tamanho em disco, ordenado do maior → menor
+herdux list              # Listagem rápida (nome, owner, encoding)
+herdux ls --size         # Inclui tamanho em disco, ordenado do maior → menor
 ```
 
 > [!NOTE]
@@ -164,29 +166,29 @@ pgm ls --size         # Inclui tamanho em disco, ordenado do maior → menor
 
 ---
 
-### `pgm create <nome>`
+### `herdux create <nome>`
 
 Cria um novo banco de dados.
 
 ```bash
-pgm create meu_novo_db
+herdux create meu_novo_db
 ```
 
-### `pgm drop <nome>`
+### `herdux drop <nome>`
 
 Remove um banco de dados com confirmação interativa.
 
 ```bash
-pgm drop meu_banco_antigo
+herdux drop meu_banco_antigo
 ```
 
 ---
 
-### 🧹 `pgm clean` — Limpeza em Massa
+### 🧹 `herdux clean` — Limpeza em Massa
 
 Trabalhando com bancos de desenvolvimento cheios de seeds? Precisa recuperar espaço em disco rápido?
 
-`pgm clean` permite:
+`herdux clean` permite:
 
 - **Multi-seleção** de bancos a partir de uma interface interativa com checkboxes
 - **Gerar backups de segurança opcionais** antes de qualquer ação destrutiva
@@ -194,23 +196,23 @@ Trabalhando com bancos de desenvolvimento cheios de seeds? Precisa recuperar esp
 - **Abortar imediatamente** se qualquer backup falhar, prevenindo perda de dados
 
 ```bash
-pgm clean
+herdux clean
 ```
 
 Projetado para o workflow real do desenvolvedor: clonar bancos, experimentar, depois limpar tudo de uma vez.
 
 ---
 
-### 📦 `pgm backup <banco>`
+### 📦 `herdux backup <banco>`
 
 Gera um backup com timestamp em `./backups/`.
 
 ```bash
-pgm backup mydb                       # Formato custom (.dump)
-pgm backup mydb --format plain        # SQL puro (.sql)
-pgm backup mydb --drop                # Backup, depois pergunta se quer dropar
-pgm backup mydb --drop --yes          # Backup + drop, sem perguntas
-pgm backup mydb -o ./meus-backups     # Diretório de saída personalizado
+herdux backup mydb                       # Formato custom (.dump)
+herdux backup mydb --format plain        # SQL puro (.sql)
+herdux backup mydb --drop                # Backup, depois pergunta se quer dropar
+herdux backup mydb --drop --yes          # Backup + drop, sem perguntas
+herdux backup mydb -o ./meus-backups     # Diretório de saída personalizado
 ```
 
 | Opção | Descrição |
@@ -222,7 +224,7 @@ pgm backup mydb -o ./meus-backups     # Diretório de saída personalizado
 
 ---
 
-### 📥 `pgm restore <arquivo>`
+### 📥 `herdux restore <arquivo>`
 
 Restaura um banco de dados a partir de um arquivo de backup. Detecta automaticamente o formato:
 
@@ -230,29 +232,29 @@ Restaura um banco de dados a partir de um arquivo de backup. Detecta automaticam
 - `.dump` ou qualquer outra extensão → usa `pg_restore`
 
 ```bash
-pgm restore ./backups/mydb_2026-02-23.dump --db mydb
-pgm restore ./exports/data.sql --db mydb
+herdux restore ./backups/mydb_2026-02-23.dump --db mydb
+herdux restore ./exports/data.sql --db mydb
 ```
 
 Precisa sobrescrever a auto-detecção? Use `--format`:
 
 ```bash
-pgm restore arquivo.bkp --db mydb --format custom
-pgm restore script.txt --db mydb --format plain
+herdux restore arquivo.bkp --db mydb --format custom
+herdux restore script.txt --db mydb --format plain
 ```
 
 ---
 
 ## ⚙️ Configuração & Perfis de Servidor
 
-O `pgm` armazena configurações localmente em `~/.pgm/config.json`.
+O `herdux` armazena configurações localmente em `~/.herdux/config.json`.
 
 ### Definir Padrões Globais
 
 ```bash
-pgm config set user postgres
-pgm config set password minha_senha
-pgm config set port 5432
+herdux config set user postgres
+herdux config set password minha_senha
+herdux config set port 5432
 ```
 
 ### Perfis de Servidor Nomeados
@@ -260,38 +262,38 @@ pgm config set port 5432
 Gerencie múltiplas instâncias PostgreSQL sem esforço:
 
 ```bash
-pgm config add pg16 --port 5416
-pgm config add pg17 --port 5417 --user admin
-pgm config add staging --host 192.168.0.10 --port 5432
+herdux config add pg16 --port 5416
+herdux config add pg17 --port 5417 --user admin
+herdux config add staging --host 192.168.0.10 --port 5432
 ```
 
 Depois conecte usando a flag `-s`:
 
 ```bash
-pgm list -s pg16
-pgm backup mydb -s staging
+herdux list -s pg16
+herdux backup mydb -s staging
 ```
 
 ### Visualizar & Gerenciar Config
 
 ```bash
-pgm config list           # Mostra todas as configurações e perfis salvos
-pgm config get port       # Obtém um valor específico
-pgm config rm pg16        # Remove um perfil de servidor
-pgm config reset          # Limpa toda a configuração
+herdux config list           # Mostra todas as configurações e perfis salvos
+herdux config get port       # Obtém um valor específico
+herdux config rm pg16        # Remove um perfil de servidor
+herdux config reset          # Limpa toda a configuração
 ```
 
 ---
 
 ## 🔌 Prioridade de Conexão
 
-Ao resolver como se conectar, o `pgm` segue uma ordem de prioridade estrita e previsível:
+Ao resolver como se conectar, o `herdux` segue uma ordem de prioridade estrita e previsível:
 
 | Prioridade | Fonte | Exemplo |
 |---|---|---|
-| 1️⃣ | **Flags CLI** | `pgm list --port 5417` |
-| 2️⃣ | **Perfil de servidor** | `pgm list -s pg16` |
-| 3️⃣ | **Padrões salvos** | `pgm config set port 5432` |
+| 1️⃣ | **Flags CLI** | `herdux list --port 5417` |
+| 2️⃣ | **Perfil de servidor** | `herdux list -s pg16` |
+| 3️⃣ | **Padrões salvos** | `herdux config set port 5432` |
 | 4️⃣ | **Auto-descoberta** | Escaneia portas comuns; pergunta se encontrar múltiplas |
 
 Isso significa que a entrada explícita sempre vence. Sem surpresas.
@@ -300,9 +302,9 @@ Isso significa que a entrada explícita sempre vence. Sem surpresas.
 
 ## 🤔 Por que não pgAdmin?
 
-O pgAdmin é uma ferramenta GUI poderosa para administração de bancos de dados. O `pgm` não é um substituto para ele.
+O pgAdmin é uma ferramenta GUI poderosa para administração de bancos de dados. O `herdux` não é um substituto para ele.
 
-O `pgm` é otimizado para **workflows de desenvolvimento focados no terminal** — operações rápidas, scripting, pipelines de CI e gerenciamento de múltiplas instâncias locais sem sair do terminal.
+O `herdux` é otimizado para **workflows de desenvolvimento focados no terminal** — operações rápidas, scripting, pipelines de CI e gerenciamento de múltiplas instâncias locais sem sair do terminal.
 
 Sem GUI. Sem overhead. Só velocidade.
 
@@ -310,7 +312,7 @@ Sem GUI. Sem overhead. Só velocidade.
 
 ## 🐳 Suporte Docker (Em Breve)
 
-O `pgm` poderá detectar e interagir com instâncias PostgreSQL rodando dentro de containers Docker — listando, conectando e gerenciando-as tão naturalmente quanto instâncias locais.
+O `herdux` poderá detectar e interagir com instâncias PostgreSQL rodando dentro de containers Docker — listando, conectando e gerenciando-as tão naturalmente quanto instâncias locais.
 
 ---
 
@@ -331,8 +333,8 @@ O `pgm` poderá detectar e interagir com instâncias PostgreSQL rodando dentro d
 PRs são bem-vindas! Por favor, abra uma issue primeiro para discutir mudanças significativas.
 
 ```bash
-git clone https://github.com/your-user/cli-pgm.git
-cd cli-pgm
+git clone https://github.com/your-user/cli-herdux.git
+cd cli-herdux
 npm install
 npm run dev
 ```

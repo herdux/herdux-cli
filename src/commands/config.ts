@@ -8,7 +8,7 @@ const VALID_KEYS = ["host", "port", "user", "password"];
 export function registerConfigCommand(program: Command): void {
   const configCmd = program
     .command("config")
-    .description("Manage pgm configuration");
+    .description("Manage herdux configuration");
 
   configCmd;
   configCmd
@@ -54,7 +54,7 @@ export function registerConfigCommand(program: Command): void {
     .action(() => {
       const cfg = config.loadConfig();
 
-      logger.title("📋 pgm Configuration");
+      logger.title("📋 herdux Configuration");
 
       const defaults = cfg.default;
       const hasDefaults = Object.keys(defaults).length > 0;

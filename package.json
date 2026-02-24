@@ -1,11 +1,11 @@
 {
-  "name": "cli-pgm",
+  "name": "herdux",
   "version": "0.1.0",
   "description": "A modern CLI to PostgreSQL management",
   "type": "module",
   "main": "./dist/index.js",
   "bin": {
-    "pgm": "./dist/index.js"
+    "herdux": "./dist/index.js"
   },
   "scripts": {
     "build": "tsc",

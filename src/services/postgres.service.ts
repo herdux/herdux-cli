@@ -189,7 +189,7 @@ export async function listDatabases(
     const errMsg = result.stderr;
     if (errMsg.includes("password") || errMsg.includes("authentication")) {
       throw new Error(
-        `Authentication failed. Use --password to provide credentials:\n  pgm --password <password> list`,
+        `Authentication failed. Use --password to provide credentials:\n  herdux --password <password> list`,
       );
     }
     throw new Error(`Failed to list databases: ${errMsg}`);
@@ -228,7 +228,7 @@ export async function createDatabase(
     const errMsg = result.stderr;
     if (errMsg.includes("password") || errMsg.includes("authentication")) {
       throw new Error(
-        `Authentication failed. Use --password to provide credentials:\n  pgm --password <password> create "${name}"`,
+        `Authentication failed. Use --password to provide credentials:\n  herdux --password <password> create "${name}"`,
       );
     }
     throw new Error(`Failed to create database "${name}": ${errMsg}`);
@@ -255,7 +255,7 @@ export async function dropDatabase(
     const errMsg = result.stderr;
     if (errMsg.includes("password") || errMsg.includes("authentication")) {
       throw new Error(
-        `Authentication failed. Use --password to provide credentials:\n  pgm --password <password> drop "${name}"`,
+        `Authentication failed. Use --password to provide credentials:\n  herdux --password <password> drop "${name}"`,
       );
     }
     throw new Error(`Failed to drop database "${name}": ${errMsg}`);

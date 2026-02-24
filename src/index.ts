@@ -14,7 +14,7 @@ import { registerDoctorCommand } from "./commands/doctor.js";
 const program = new Command();
 
 program
-  .name("pgm")
+  .name("herdux")
   .description("🐘 A modern CLI to PostgreSQL management")
   .version("0.1.0")
   .option("-H, --host <host>", "PostgreSQL host")

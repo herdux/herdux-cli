@@ -57,7 +57,7 @@ export async function resolveConnectionOptions(
       if (names.length === 0) {
         logger.line("(none)");
         logger.line(
-          "Add one with: pgm config add-server <name> --port <port> --password <pw>",
+          "Add one with: herdux config add-server <name> --port <port> --password <pw>",
         );
       } else {
         for (const name of names) {
@@ -96,9 +96,9 @@ export async function resolveConnectionOptions(
     logger.blank();
     logger.error("Could not find any PostgreSQL server on common ports.");
     logger.info("Options:");
-    logger.line("1. Specify port: pgm --port 5417 list");
-    logger.line("2. Save defaults: pgm config set port 5417");
-    logger.line("3. Add server:    pgm config add-server pg17 --port 5417");
+    logger.line("1. Specify port: herdux --port 5417 list");
+    logger.line("2. Save defaults: herdux config set port 5417");
+    logger.line("3. Add server:    herdux config add-server pg17 --port 5417");
     logger.blank();
     process.exit(1);
   }

@@ -21,7 +21,7 @@ export function registerDoctorCommand(program: Command): void {
     .command("doctor")
     .description("Check system health and PostgreSQL dependencies")
     .action(async () => {
-      console.log(chalk.bold("\n🩺 pgm Doctor - System Health Check\n"));
+      console.log(chalk.bold("\n🩺 herdux Doctor - System Health Check\n"));
 
       const rawOpts = program.opts();
       const opts = await resolveConnectionOptions(
@@ -109,7 +109,9 @@ export function registerDoctorCommand(program: Command): void {
       console.log();
       if (psqlCheck.ok && dumpCheck.ok && restoreCheck.ok) {
         console.log(
-          chalk.green("✔ Your system is fully equipped to run pgm commands!"),
+          chalk.green(
+            "✔ Your system is fully equipped to run herdux commands!",
+          ),
         );
       } else {
         console.log(

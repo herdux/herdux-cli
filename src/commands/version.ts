@@ -37,7 +37,7 @@ export function registerVersionCommand(program: Command): void {
           console.log();
         }
 
-        console.log(chalk.bold.cyan("📦 pgm CLI"));
+        console.log(chalk.bold.cyan("📦 herdux CLI"));
         console.log(`   v${program.version()}\n`);
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
