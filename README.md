@@ -14,9 +14,9 @@ A fast, interactive CLI that removes friction from daily local database workflow
 
 > Optimized for local and development environments. Production use is supported with explicit configuration.
 
-<p align="center">
+<!-- <p align="center">
   <img src=".github/herdux.gif" alt="herdux terminal gif" width="1220" />
-</p>
+</p> -->
 
 ---
 

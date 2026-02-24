@@ -14,9 +14,9 @@ Uma CLI rápida e interativa que remove a fricção dos workflows diários com b
 
 > Otimizado para ambientes locais e de desenvolvimento. O uso em produção é suportado com configuração explícita.
 
-<p align="center">
+<!-- <p align="center">
   <img src=".github/herdux.gif" alt="herdux terminal gif" width="1220" />
-</p>
+</p> -->
 
 ---
 

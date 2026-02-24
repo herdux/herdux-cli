@@ -17,7 +17,7 @@ program
   .name("herdux")
   .helpCommand(false)
   .description("A modern CLI to Database management")
-  .version("0.1.1")
+  .version("0.1.2")
   .option("-H, --host <host>", "Database host")
   .option("-p, --port <port>", "Database port (auto-detected if omitted)")
   .option("-U, --user <user>", "Database user")
