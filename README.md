@@ -8,7 +8,7 @@
 
 A fast, interactive CLI that removes friction from daily local database workflows, especially when juggling multiple instances and large datasets.
 
-![Version](https://img.shields.io/badge/version-0.2.1-blue.svg)
+![Version](https://img.shields.io/badge/version-0.2.3-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Node](https://img.shields.io/badge/node-18%2B-43853d.svg)
 [![GitHub Sponsors](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?style=flat&logo=github)](https://github.com/sponsors/eduardozaniboni)
@@ -71,11 +71,12 @@ Fewer flags. Fewer mistakes. Zero terminal fatigue.
 
 ## 🎯 Who is Herdux for?
 
-**Herdux** was built *for developers, by developers*. 
+**Herdux** was built _for developers, by developers_.
 
 It was born from the daily frustration of constantly having to restore backups to test specific states, drop corrupted databases during development, and juggle raw database binaries.
 
 It is specifically designed for developers who:
+
 - Manage local infrastructures and need to check disk sizes before seeding new databases.
 - Want to quickly clone, seed, and reset databases without reading `man` pages.
 - Need safe backup & restore workflows that don't rely on fragile bash scripts.
@@ -99,7 +100,7 @@ If you manage databases locally, Herdux was created to solve your pain.
 
 ## 💡 Philosophy
 
-**Herdux** combines *herd* and *UX* — delivering a better developer experience when managing your local database clusters. The name reflects our focus on improving the developer experience of managing database herds.
+**Herdux** combines _herd_ and _UX_ — delivering a better developer experience when managing your local database clusters. The name reflects our focus on improving the developer experience of managing database herds.
 
 **Herdux** follows three principles:
 
@@ -120,7 +121,6 @@ If you manage databases locally, Herdux was created to solve your pain.
 - **`--yes` must be combined with `--drop`** — cannot skip confirmation alone
 
 > If you request a backup before dropping and that backup fails, **Herdux** stops immediately. No data is lost.
-
 
 ---
 
@@ -243,12 +243,12 @@ herdux backup mydb --drop --yes          # Backup + drop, no questions
 herdux backup mydb -o ./my-backups       # Custom output directory
 ```
 
-| Option | Description |
-|---|---|
+| Option                | Description                                         |
+| --------------------- | --------------------------------------------------- |
 | `-F, --format <type>` | `custom` (default, compressed) or `plain` (raw SQL) |
-| `-d, --drop` | Prompt to drop database after successful backup |
-| `-y, --yes` | Skip drop confirmation (requires `--drop`) |
-| `-o, --output <dir>` | Output directory (default: `./backups`) |
+| `-d, --drop`          | Prompt to drop database after successful backup     |
+| `-y, --yes`           | Skip drop confirmation (requires `--drop`)          |
+| `-o, --output <dir>`  | Output directory (default: `./backups`)             |
 
 ---
 
@@ -317,12 +317,12 @@ herdux config reset          # Clear all configuration
 
 When resolving how to connect, **Herdux** follows a strict, predictable priority order:
 
-| Priority | Source | Example |
-|---|---|---|
-| 1️⃣ | **CLI flags** | `herdux list --port 5417` |
-| 2️⃣ | **Server profile** | `herdux list -s pg16` |
-| 3️⃣ | **Saved defaults** | `herdux config set port 5432` |
-| 4️⃣ | **Auto-discovery** | Scans common ports; prompts if multiple found |
+| Priority | Source             | Example                                       |
+| -------- | ------------------ | --------------------------------------------- |
+| 1️⃣       | **CLI flags**      | `herdux list --port 5417`                     |
+| 2️⃣       | **Server profile** | `herdux list -s pg16`                         |
+| 3️⃣       | **Saved defaults** | `herdux config set port 5432`                 |
+| 4️⃣       | **Auto-discovery** | Scans common ports; prompts if multiple found |
 
 This means explicit input always wins. No surprises.
 
