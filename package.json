@@ -29,6 +29,16 @@
     "backup",
     "restore"
   ],
+  "funding": [
+    {
+      "type": "github",
+      "url": "https://github.com/sponsors/eduardozaniboni"
+    },
+    {
+      "type": "buymeacoffee",
+      "url": "https://www.buymeacoffee.com/eduardozaniboni"
+    }
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {

@@ -11,6 +11,7 @@ Uma CLI rápida e interativa que remove a fricção dos workflows diários com b
 ![Version](https://img.shields.io/badge/version-0.2.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Node](https://img.shields.io/badge/node-18%2B-43853d.svg)
+[![GitHub Sponsors](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?style=flat&logo=github)](https://github.com/sponsors/eduardozaniboni)
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy_Me_A_Coffee-FFDD00?style=flat&logo=buy-me-a-coffee&logoColor=black)](https://www.buymeacoffee.com/eduardozaniboni)
 
 > Otimizado para ambientes locais e de desenvolvimento. O uso em produção é suportado com configuração explícita.
@@ -371,9 +372,10 @@ npm run dev
 
 ## ☕ Apoie o Projeto
 
-Se o **Herdux** tem te salvado horas de dores de cabeça com bancos de dados, considere pagar um café! Isso ajuda demais a manter o projeto ativo e open-source.
+Se o **Herdux** tem te salvado horas de dores de cabeça com bancos de dados, considere apoiar o projeto! Isso ajuda demais a mantê-lo ativo e open-source.
 
-<a href="https://www.buymeacoffee.com/eduardozaniboni" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 50px !important;width: 181px !important;" ></a>
+<a href="https://github.com/sponsors/eduardozaniboni" target="_blank"><img src="https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?style=for-the-badge&logo=github" alt="GitHub Sponsors"></a>
+<a href="https://www.buymeacoffee.com/eduardozaniboni" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 28px !important;width: 100px !important;" ></a>
 
 ---
 
