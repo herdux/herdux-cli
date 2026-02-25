@@ -1,7 +1,7 @@
 import type { Command } from "commander";
 import chalk from "chalk";
-import * as config from "../services/config.service.js";
-import { logger } from "../core/logger.js";
+import * as config from "../infra/config/config.service.js";
+import { logger } from "../presentation/logger.js";
 
 const VALID_KEYS = ["host", "port", "user", "password", "output"];
 

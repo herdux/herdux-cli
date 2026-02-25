@@ -5,12 +5,12 @@ import prompts from "prompts";
 import {
   checkPostgresClient,
   checkPgDump,
-} from "../services/environment.service.js";
-import * as backup from "../services/backup.service.js";
-import * as postgres from "../services/postgres.service.js";
-import * as config from "../services/config.service.js";
-import type { ConnectionOptions } from "../services/postgres.service.js";
-import { resolveConnectionOptions } from "../utils/resolve-connection.js";
+} from "../infra/engines/postgres/postgres-env.js";
+import * as backup from "../infra/engines/postgres/postgres-backup.js";
+import * as postgres from "../infra/engines/postgres/postgres.engine.js";
+import * as config from "../infra/config/config.service.js";
+import type { ConnectionOptions } from "../infra/engines/postgres/postgres.engine.js";
+import { resolveConnectionOptions } from "../infra/engines/postgres/resolve-connection.js";
 import { join } from "path";
 import { homedir } from "os";
 

@@ -1,8 +1,8 @@
 import type { Command } from "commander";
 import chalk from "chalk";
 import ora from "ora";
-import { checkPostgresClient } from "../services/environment.service.js";
-import * as postgres from "../services/postgres.service.js";
+import { checkPostgresClient } from "../infra/engines/postgres/postgres-env.js";
+import * as postgres from "../infra/engines/postgres/postgres.engine.js";
 
 export function registerVersionCommand(program: Command): void {
   program

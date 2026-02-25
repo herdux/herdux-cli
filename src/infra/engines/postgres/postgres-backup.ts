@@ -1,7 +1,7 @@
-import { runCommand } from "../core/command-runner.js";
+import { runCommand } from "../../command-runner.js";
 import { existsSync, mkdirSync } from "fs";
 import { join, resolve } from "path";
-import type { ConnectionOptions } from "./postgres.service.js";
+import type { ConnectionOptions } from "./postgres.engine.js";
 
 function generateBackupFilename(
   dbName: string,

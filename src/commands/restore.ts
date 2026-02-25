@@ -1,13 +1,13 @@
 import type { Command } from "commander";
 import chalk from "chalk";
 import ora from "ora";
-import { checkPostgresClient } from "../services/environment.service.js";
-import * as backup from "../services/backup.service.js";
+import { checkPostgresClient } from "../infra/engines/postgres/postgres-env.js";
+import * as backup from "../infra/engines/postgres/postgres-backup.js";
 import {
   type ConnectionOptions,
   createDatabase,
-} from "../services/postgres.service.js";
-import { resolveConnectionOptions } from "../utils/resolve-connection.js";
+} from "../infra/engines/postgres/postgres.engine.js";
+import { resolveConnectionOptions } from "../infra/engines/postgres/resolve-connection.js";
 
 export function registerRestoreCommand(program: Command): void {
   program

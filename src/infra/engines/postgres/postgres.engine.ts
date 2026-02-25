@@ -1,5 +1,5 @@
-import { runCommand } from "../core/command-runner.js";
-import { getScanPorts } from "./config.service.js";
+import { runCommand } from "../../command-runner.js";
+import { getScanPorts } from "../../config/config.service.js";
 
 export interface ConnectionOptions {
   host?: string;

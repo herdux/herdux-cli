@@ -1,10 +1,10 @@
 import ora from "ora";
 import chalk from "chalk";
 import prompts from "prompts";
-import { discoverInstances } from "../services/postgres.service.js";
-import type { ConnectionOptions } from "../services/postgres.service.js";
-import * as config from "../services/config.service.js";
-import { logger } from "../core/logger.js";
+import { discoverInstances } from "./postgres.engine.js";
+import type { ConnectionOptions } from "./postgres.engine.js";
+import * as config from "../../config/config.service.js";
+import { logger } from "../../../presentation/logger.js";
 
 export async function resolveConnectionOptions(
   opts: ConnectionOptions,

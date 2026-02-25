@@ -2,8 +2,8 @@ import type { Command } from "commander";
 import chalk from "chalk";
 import ora from "ora";
 import { execa } from "execa";
-import { resolveConnectionOptions } from "../utils/resolve-connection.js";
-import type { ConnectionOptions } from "../services/postgres.service.js";
+import { resolveConnectionOptions } from "../infra/engines/postgres/resolve-connection.js";
+import type { ConnectionOptions } from "../infra/engines/postgres/postgres.engine.js";
 
 async function checkBin(
   binName: string,

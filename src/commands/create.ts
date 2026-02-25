@@ -1,10 +1,10 @@
 import type { Command } from "commander";
 import chalk from "chalk";
 import ora from "ora";
-import { checkPostgresClient } from "../services/environment.service.js";
-import * as postgres from "../services/postgres.service.js";
-import type { ConnectionOptions } from "../services/postgres.service.js";
-import { resolveConnectionOptions } from "../utils/resolve-connection.js";
+import { checkPostgresClient } from "../infra/engines/postgres/postgres-env.js";
+import * as postgres from "../infra/engines/postgres/postgres.engine.js";
+import type { ConnectionOptions } from "../infra/engines/postgres/postgres.engine.js";
+import { resolveConnectionOptions } from "../infra/engines/postgres/resolve-connection.js";
 
 export function registerCreateCommand(program: Command): void {
   program

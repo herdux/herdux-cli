@@ -1,6 +1,6 @@
 import ora from "ora";
-import { logger } from "../core/logger.js";
-import { binaryExists, getBinaryVersion } from "../utils/detect-binary.js";
+import { logger } from "../../../presentation/logger.js";
+import { binaryExists, getBinaryVersion } from "../../utils/detect-binary.js";
 
 export async function checkPostgresClient(): Promise<string> {
   const spinner = ora("Checking PostgreSQL client...").start();
