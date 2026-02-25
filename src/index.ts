@@ -11,13 +11,21 @@ import { registerConfigCommand } from "./commands/config.js";
 import { registerCleanCommand } from "./commands/clean.js";
 import { registerDoctorCommand } from "./commands/doctor.js";
 
+import { join, dirname } from "path";
+import { fileURLToPath } from "url";
+import { readFileSync } from "fs";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const pkgPath = join(__dirname, "..", "package.json");
+const pkg = JSON.parse(readFileSync(pkgPath, "utf-8"));
+
 const program = new Command();
 
 program
   .name("herdux")
   .helpCommand(false)
   .description("A modern CLI to Database management")
-  .version("0.1.2")
+  .version(pkg.version)
   .option("-H, --host <host>", "Database host")
   .option("-p, --port <port>", "Database port (auto-detected if omitted)")
   .option("-U, --user <user>", "Database user")
