@@ -8,7 +8,7 @@
 
 A fast, interactive CLI that removes friction from daily local database workflows, especially when juggling multiple instances and large datasets.
 
-![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)
+![Version](https://img.shields.io/badge/version-0.2.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Node](https://img.shields.io/badge/node-18%2B-43853d.svg)
 
