@@ -24,8 +24,8 @@ A fast, interactive CLI that removes friction from daily local database workflow
 
 ```bash
 npm install -g herdux-cli
-herdux doctor
-herdux list
+hdx doctor
+hdx list
 ```
 
 That's it. You're managing databases.
@@ -133,6 +133,8 @@ If you manage databases locally, Herdux was created to solve your pain.
 ## 📦 Installation
 
 **npm (recommended):**
+
+> **⚠️ IMPORTANT:** You must use the `-g` (global) flag for the CLI to be accessible anywhere in your terminal.
 
 ```bash
 npm install -g herdux-cli

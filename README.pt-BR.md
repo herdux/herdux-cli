@@ -24,8 +24,8 @@ Uma CLI rápida e interativa que remove a fricção dos workflows diários com b
 
 ```bash
 npm install -g herdux-cli
-herdux doctor
-herdux list
+hdx doctor
+hdx list
 ```
 
 É só isso. Você já está gerenciando bancos de dados.
@@ -132,6 +132,8 @@ O **Herdux** trata operações destrutivas com cuidado:
 ## 📦 Instalação
 
 **npm (recomendado):**
+
+> **⚠️ IMPORTANTE:** Você precisa usar a flag `-g` (global) para que a CLI fique disponível no seu terminal.
 
 ```bash
 npm install -g herdux-cli
