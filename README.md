@@ -24,8 +24,10 @@ A fast, interactive CLI that removes friction from daily local database workflow
 
 ```bash
 npm install -g herdux-cli
+
+# You can use either 'herdux' or the shorter 'hdx' alias
 hdx doctor
-hdx list
+herdux list
 ```
 
 That's it. You're managing databases.

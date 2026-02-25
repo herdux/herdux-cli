@@ -24,8 +24,10 @@ Uma CLI rápida e interativa que remove a fricção dos workflows diários com b
 
 ```bash
 npm install -g herdux-cli
+
+# Você pode usar 'herdux' ou o alias mais curto 'hdx'
 hdx doctor
-hdx list
+herdux list
 ```
 
 É só isso. Você já está gerenciando bancos de dados.
