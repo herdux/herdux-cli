@@ -1,8 +1,7 @@
 import type { Command } from "commander";
 import chalk from "chalk";
 import ora from "ora";
-import { checkPostgresClient } from "../infra/engines/postgres/postgres-env.js";
-import * as postgres from "../infra/engines/postgres/postgres.engine.js";
+import { PostgresEngine } from "../infra/engines/postgres/postgres.engine.js";
 
 export function registerVersionCommand(program: Command): void {
   program
@@ -10,20 +9,21 @@ export function registerVersionCommand(program: Command): void {
     .description("Show Database client and server versions")
     .action(async () => {
       try {
-        await checkPostgresClient();
-
-        const clientVersion = await postgres.getVersion();
-        console.log(chalk.bold.cyan("\n--- PostgreSQL Client ---"));
+        const engine = new PostgresEngine();
+        const clientVersion = await engine.checkClientVersion();
+        console.log(
+          chalk.bold.cyan(`\n--- ${engine.getEngineName()} Client ---`),
+        );
         console.log(`   ${clientVersion}`);
 
         const opts = program.opts();
         const spinner = ora(
-          "Scanning for running PostgreSQL servers...",
+          `Scanning for running ${engine.getEngineName()} servers...`,
         ).start();
-        const instances = await postgres.discoverInstances(opts);
+        const instances = await engine.discoverInstances(opts);
 
         if (instances.length === 0) {
-          spinner.warn("No running PostgreSQL servers found");
+          spinner.warn(`No running ${engine.getEngineName()} servers found`);
           console.log(chalk.yellow("   No servers detected on common ports."));
           console.log(chalk.gray("   Use --port to specify a custom port.\n"));
         } else {

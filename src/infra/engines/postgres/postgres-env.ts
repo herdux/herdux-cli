@@ -25,7 +25,7 @@ export async function checkPostgresClient(): Promise<string> {
   }
 
   const version = await getBinaryVersion("psql");
-  spinner.succeed(`  Found ${version ?? "psql"}`);
+  spinner.succeed(`Found ${version ?? "psql"}`);
 
   return version ?? "unknown";
 }
@@ -45,7 +45,7 @@ export async function checkPgDump(): Promise<string> {
   }
 
   const version = await getBinaryVersion("pg_dump");
-  spinner.succeed(`  Found ${version ?? "pg_dump"}`);
+  spinner.succeed(`Found ${version ?? "pg_dump"}`);
 
   return version ?? "unknown";
 }

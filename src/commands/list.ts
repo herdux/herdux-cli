@@ -1,9 +1,8 @@
 import type { Command } from "commander";
 import chalk from "chalk";
 import ora from "ora";
-import { checkPostgresClient } from "../infra/engines/postgres/postgres-env.js";
-import * as postgres from "../infra/engines/postgres/postgres.engine.js";
-import type { ConnectionOptions } from "../infra/engines/postgres/postgres.engine.js";
+import { PostgresEngine } from "../infra/engines/postgres/postgres.engine.js";
+import type { ConnectionOptions } from "../core/interfaces/database-engine.interface.js";
 import { resolveConnectionOptions } from "../infra/engines/postgres/resolve-connection.js";
 
 export function registerListCommand(program: Command): void {
@@ -17,7 +16,8 @@ export function registerListCommand(program: Command): void {
     )
     .action(async (options: { size?: boolean }) => {
       try {
-        await checkPostgresClient();
+        const engine = new PostgresEngine();
+        await engine.checkClientVersion();
 
         const rawOpts = program.opts();
         const opts = await resolveConnectionOptions(
@@ -31,7 +31,7 @@ export function registerListCommand(program: Command): void {
             : "Fetching database list...",
         ).start();
 
-        const databases = await postgres.listDatabases({
+        const databases = await engine.listDatabases({
           ...opts,
           includeSize: options.size,
         });
@@ -63,7 +63,9 @@ export function registerListCommand(program: Command): void {
         );
 
         for (const db of databases) {
-          let row = `  ${chalk.cyan(db.name.padEnd(nameWidth))}${db.owner.padEnd(ownerWidth)}${db.encoding.padEnd(encodingWidth)}`;
+          const owner = db.owner ?? "";
+          const encoding = db.encoding ?? "";
+          let row = `  ${chalk.cyan(db.name.padEnd(nameWidth))}${owner.padEnd(ownerWidth)}${encoding.padEnd(encodingWidth)}`;
           if (options.size && db.size) {
             row += chalk.green(db.size.padEnd(sizeWidth));
           }

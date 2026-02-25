@@ -1,8 +1,8 @@
 import ora from "ora";
 import chalk from "chalk";
 import prompts from "prompts";
-import { discoverInstances } from "./postgres.engine.js";
-import type { ConnectionOptions } from "./postgres.engine.js";
+import { PostgresEngine } from "./postgres.engine.js";
+import type { ConnectionOptions } from "../../../core/interfaces/database-engine.interface.js";
 import * as config from "../../config/config.service.js";
 import { logger } from "../../../presentation/logger.js";
 
@@ -88,13 +88,18 @@ export async function resolveConnectionOptions(
     return merged;
   }
 
-  const spinner = ora("Scanning for running PostgreSQL servers...").start();
-  const instances = await discoverInstances(merged);
+  const engine = new PostgresEngine();
+  const spinner = ora(
+    `Scanning for running ${engine.getEngineName()} servers...`,
+  ).start();
+  const instances = await engine.discoverInstances(merged);
 
   if (instances.length === 0) {
-    spinner.fail("No running PostgreSQL servers found");
+    spinner.fail(`No running ${engine.getEngineName()} servers found`);
     logger.blank();
-    logger.error("Could not find any PostgreSQL server on common ports.");
+    logger.error(
+      `Could not find any ${engine.getEngineName()} server on common ports.`,
+    );
     logger.info("Options:");
     logger.line("1. Specify port: herdux --port 5417 list");
     logger.line("2. Save defaults: herdux config set port 5417");
@@ -111,7 +116,7 @@ export async function resolveConnectionOptions(
     return { ...merged, port: instance.port };
   }
 
-  spinner.succeed(`  Found ${instances.length} running servers`);
+  spinner.succeed(`Found ${instances.length} running servers`);
 
   const choices = instances.map((inst) => ({
     title: `Port ${inst.port} — ${inst.version}`,
@@ -121,7 +126,7 @@ export async function resolveConnectionOptions(
   const response = await prompts({
     type: "select",
     name: "port",
-    message: "Multiple PostgreSQL servers found. Which one do you want to use?",
+    message: `Multiple ${engine.getEngineName()} servers found. Which one do you want to use?`,
     choices,
   });
 

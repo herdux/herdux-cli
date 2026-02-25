@@ -2,14 +2,9 @@ import type { Command } from "commander";
 import chalk from "chalk";
 import ora from "ora";
 import prompts from "prompts";
-import {
-  checkPostgresClient,
-  checkPgDump,
-} from "../infra/engines/postgres/postgres-env.js";
-import * as backup from "../infra/engines/postgres/postgres-backup.js";
-import * as postgres from "../infra/engines/postgres/postgres.engine.js";
+import { PostgresEngine } from "../infra/engines/postgres/postgres.engine.js";
 import * as config from "../infra/config/config.service.js";
-import type { ConnectionOptions } from "../infra/engines/postgres/postgres.engine.js";
+import type { ConnectionOptions } from "../core/interfaces/database-engine.interface.js";
 import { resolveConnectionOptions } from "../infra/engines/postgres/resolve-connection.js";
 import { join } from "path";
 import { homedir } from "os";
@@ -40,8 +35,9 @@ export function registerBackupCommand(program: Command): void {
         },
       ) => {
         try {
-          await checkPostgresClient();
-          await checkPgDump();
+          const engine = new PostgresEngine();
+          await engine.checkClientVersion();
+          await engine.checkBackupRequirements();
 
           const rawOpts = program.opts();
           const opts = await resolveConnectionOptions(
@@ -68,7 +64,7 @@ export function registerBackupCommand(program: Command): void {
 
           const spinner = ora(`Generating backup for "${database}"...`).start();
 
-          const outputPath = await backup.backupDatabase(
+          const outputPath = await engine.backupDatabase(
             database,
             finalOutputDir,
             opts,
@@ -93,7 +89,7 @@ export function registerBackupCommand(program: Command): void {
               const dropSpinner = ora(
                 `Dropping database "${database}"...`,
               ).start();
-              await postgres.dropDatabase(database, opts);
+              await engine.dropDatabase(database, opts);
               dropSpinner.succeed(
                 `Database "${database}" dropped successfully\n`,
               );
