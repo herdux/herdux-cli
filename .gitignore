@@ -29,7 +29,12 @@ Thumbs.db
 *.swp
 *.swo
 
+# E2E test artifacts
+tests/e2e/postgres/backups/
+tests/e2e/postgres/.tmp-home/
+
 # It is being created hourly
 
 ROADMAP.md
 VISION.md
+tsc-errors.txt

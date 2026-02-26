@@ -7,7 +7,7 @@ import {
 } from "fs";
 import { join } from "path";
 import { homedir } from "os";
-import type { ConnectionOptions } from "./postgres.service.js";
+import type { ConnectionOptions } from "../../core/interfaces/database-engine.interface.js";
 
 const CONFIG_DIR = join(homedir(), ".herdux");
 const CONFIG_FILE = join(CONFIG_DIR, "config.json");

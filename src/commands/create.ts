@@ -1,10 +1,9 @@
 import type { Command } from "commander";
 import chalk from "chalk";
 import ora from "ora";
-import { checkPostgresClient } from "../services/environment.service.js";
-import * as postgres from "../services/postgres.service.js";
-import type { ConnectionOptions } from "../services/postgres.service.js";
-import { resolveConnectionOptions } from "../utils/resolve-connection.js";
+import { PostgresEngine } from "../infra/engines/postgres/postgres.engine.js";
+import type { ConnectionOptions } from "../core/interfaces/database-engine.interface.js";
+import { resolveConnectionOptions } from "../infra/engines/postgres/resolve-connection.js";
 
 export function registerCreateCommand(program: Command): void {
   program
@@ -12,7 +11,8 @@ export function registerCreateCommand(program: Command): void {
     .description("Create a new database")
     .action(async (name: string) => {
       try {
-        await checkPostgresClient();
+        const engine = new PostgresEngine();
+        await engine.checkClientVersion();
 
         const rawOpts = program.opts();
         const opts = await resolveConnectionOptions(
@@ -22,7 +22,7 @@ export function registerCreateCommand(program: Command): void {
 
         const spinner = ora(`Creating database "${name}"...`).start();
 
-        await postgres.createDatabase(name, opts);
+        await engine.createDatabase(name, opts);
         spinner.succeed(`Database "${name}" created successfully\n`);
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);

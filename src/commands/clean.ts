@@ -2,15 +2,10 @@ import type { Command } from "commander";
 import chalk from "chalk";
 import ora from "ora";
 import prompts from "prompts";
-import {
-  checkPostgresClient,
-  checkPgDump,
-} from "../services/environment.service.js";
-import * as postgres from "../services/postgres.service.js";
-import * as backup from "../services/backup.service.js";
-import * as config from "../services/config.service.js";
-import type { ConnectionOptions } from "../services/postgres.service.js";
-import { resolveConnectionOptions } from "../utils/resolve-connection.js";
+import { PostgresEngine } from "../infra/engines/postgres/postgres.engine.js";
+import * as config from "../infra/config/config.service.js";
+import type { ConnectionOptions } from "../core/interfaces/database-engine.interface.js";
+import { resolveConnectionOptions } from "../infra/engines/postgres/resolve-connection.js";
 import { join } from "path";
 import { homedir } from "os";
 
@@ -20,7 +15,8 @@ export function registerCleanCommand(program: Command): void {
     .description("Interactive bulk cleanup tool to drop multiple databases")
     .action(async () => {
       try {
-        await checkPostgresClient();
+        const engine = new PostgresEngine();
+        await engine.checkClientVersion();
 
         const rawOpts = program.opts();
         const opts = await resolveConnectionOptions(
@@ -29,7 +25,7 @@ export function registerCleanCommand(program: Command): void {
         );
 
         let spinner = ora("Fetching databases...").start();
-        const databases = await postgres.listDatabases(opts);
+        const databases = await engine.listDatabases(opts);
         spinner.stop();
 
         if (databases.length === 0) {
@@ -72,7 +68,7 @@ export function registerCleanCommand(program: Command): void {
         });
 
         if (backupResponse.backupFirst) {
-          await checkPgDump();
+          await engine.checkBackupRequirements();
 
           const configDefaults = config.getDefault();
           const backupDir =
@@ -82,7 +78,7 @@ export function registerCleanCommand(program: Command): void {
           for (const db of selectedDbs) {
             spinner = ora(`Backing up "${db}"...`).start();
             try {
-              const outObj = await backup.backupDatabase(
+              const outObj = await engine.backupDatabase(
                 db,
                 backupDir,
                 opts,
@@ -121,7 +117,7 @@ export function registerCleanCommand(program: Command): void {
         for (const db of selectedDbs) {
           spinner = ora(`Dropping "${db}"...`).start();
           try {
-            await postgres.dropDatabase(db, opts);
+            await engine.dropDatabase(db, opts);
             spinner.succeed(`Dropped "${db}"`);
           } catch (err) {
             spinner.fail(`Failed to drop "${db}"`);

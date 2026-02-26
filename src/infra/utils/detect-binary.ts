@@ -1,4 +1,4 @@
-import { runCommand } from "../core/command-runner.js";
+import { runCommand } from "../command-runner.js";
 import { platform } from "os";
 
 export async function binaryExists(name: string): Promise<boolean> {

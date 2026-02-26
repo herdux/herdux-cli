@@ -1,6 +1,6 @@
 import ora from "ora";
-import { logger } from "../core/logger.js";
-import { binaryExists, getBinaryVersion } from "../utils/detect-binary.js";
+import { logger } from "../../../presentation/logger.js";
+import { binaryExists, getBinaryVersion } from "../../utils/detect-binary.js";
 
 export async function checkPostgresClient(): Promise<string> {
   const spinner = ora("Checking PostgreSQL client...").start();
@@ -25,7 +25,7 @@ export async function checkPostgresClient(): Promise<string> {
   }
 
   const version = await getBinaryVersion("psql");
-  spinner.succeed(`  Found ${version ?? "psql"}`);
+  spinner.succeed(`Found ${version ?? "psql"}`);
 
   return version ?? "unknown";
 }
@@ -45,7 +45,7 @@ export async function checkPgDump(): Promise<string> {
   }
 
   const version = await getBinaryVersion("pg_dump");
-  spinner.succeed(`  Found ${version ?? "pg_dump"}`);
+  spinner.succeed(`Found ${version ?? "pg_dump"}`);
 
   return version ?? "unknown";
 }

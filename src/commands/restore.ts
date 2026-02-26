@@ -1,13 +1,9 @@
 import type { Command } from "commander";
 import chalk from "chalk";
 import ora from "ora";
-import { checkPostgresClient } from "../services/environment.service.js";
-import * as backup from "../services/backup.service.js";
-import {
-  type ConnectionOptions,
-  createDatabase,
-} from "../services/postgres.service.js";
-import { resolveConnectionOptions } from "../utils/resolve-connection.js";
+import { PostgresEngine } from "../infra/engines/postgres/postgres.engine.js";
+import type { ConnectionOptions } from "../core/interfaces/database-engine.interface.js";
+import { resolveConnectionOptions } from "../infra/engines/postgres/resolve-connection.js";
 
 export function registerRestoreCommand(program: Command): void {
   program
@@ -19,7 +15,8 @@ export function registerRestoreCommand(program: Command): void {
     .option("-F, --format <type>", "Override auto-detection (custom, plain)")
     .action(async (file: string, cmdOpts: { db: string; format?: string }) => {
       try {
-        await checkPostgresClient();
+        const engine = new PostgresEngine();
+        await engine.checkClientVersion();
 
         const rawOpts = program.opts();
         const opts = await resolveConnectionOptions(
@@ -47,7 +44,7 @@ export function registerRestoreCommand(program: Command): void {
         let didCreateDb = false;
         try {
           spinner.text = `Ensuring database "${cmdOpts.db}" exists...`;
-          await createDatabase(cmdOpts.db, opts);
+          await engine.createDatabase(cmdOpts.db, opts);
           didCreateDb = true;
         } catch (err: any) {
           // Ignore error if database already exists
@@ -62,7 +59,7 @@ export function registerRestoreCommand(program: Command): void {
 
         spinner.text = `Restoring data into "${cmdOpts.db}"...`;
 
-        await backup.restoreDatabase(
+        await engine.restoreDatabase(
           file,
           cmdOpts.db,
           opts,

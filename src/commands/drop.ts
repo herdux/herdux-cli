@@ -2,10 +2,9 @@ import type { Command } from "commander";
 import chalk from "chalk";
 import ora from "ora";
 import prompts from "prompts";
-import { checkPostgresClient } from "../services/environment.service.js";
-import * as postgres from "../services/postgres.service.js";
-import type { ConnectionOptions } from "../services/postgres.service.js";
-import { resolveConnectionOptions } from "../utils/resolve-connection.js";
+import { PostgresEngine } from "../infra/engines/postgres/postgres.engine.js";
+import type { ConnectionOptions } from "../core/interfaces/database-engine.interface.js";
+import { resolveConnectionOptions } from "../infra/engines/postgres/resolve-connection.js";
 
 export function registerDropCommand(program: Command): void {
   program
@@ -14,7 +13,8 @@ export function registerDropCommand(program: Command): void {
     .option("-y, --yes", "Skip confirmation prompt")
     .action(async (name: string, cmdOpts: { yes?: boolean }) => {
       try {
-        await checkPostgresClient();
+        const engine = new PostgresEngine();
+        await engine.checkClientVersion();
 
         const rawOpts = program.opts();
         const opts = await resolveConnectionOptions(
@@ -38,7 +38,7 @@ export function registerDropCommand(program: Command): void {
 
         const spinner = ora(`Dropping database "${name}"...`).start();
 
-        await postgres.dropDatabase(name, opts);
+        await engine.dropDatabase(name, opts);
         spinner.succeed(`Database "${name}" dropped successfully\n`);
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
