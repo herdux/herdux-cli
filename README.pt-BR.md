@@ -271,6 +271,9 @@ herdux restore arquivo.bkp --db mydb --format custom
 herdux restore script.txt --db mydb --format plain
 ```
 
+> [!NOTE]
+> Ao restaurar backups vindos de ambientes gerenciados (ex: AWS RDS), o Herdux configura automaticamente a engine subjacente para ignorar atribuições de permissões e roles. Isso evita erros com roles que existem em produção mas não no seu ambiente local. Se a engine de restauração concluir a operação com avisos não-fatais (como roles ausentes), o Herdux irá te informar no terminal e prosseguir normalmente sem interromper o fluxo.
+
 ---
 
 ## ⚙️ Configuração & Perfis de Servidor

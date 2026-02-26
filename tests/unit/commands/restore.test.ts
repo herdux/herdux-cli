@@ -4,7 +4,9 @@ import { jest } from "@jest/globals";
 
 const mockCheckClientVersion = jest.fn<() => Promise<void>>();
 const mockCreateDatabase = jest.fn<() => Promise<void>>();
-const mockRestoreDatabase = jest.fn<() => Promise<void>>();
+const mockRestoreDatabase = jest.fn<
+  () => Promise<{ hasWarnings?: boolean; warnings?: string } | void>
+>();
 
 jest.unstable_mockModule(
   "../../../src/infra/engines/postgres/postgres.engine.js",
@@ -31,9 +33,11 @@ jest.unstable_mockModule(
 
 const mockSpinnerSucceed = jest.fn();
 const mockSpinnerFail = jest.fn();
+const mockSpinnerWarn = jest.fn();
 const mockSpinnerInstance = {
   succeed: mockSpinnerSucceed,
   fail: mockSpinnerFail,
+  warn: mockSpinnerWarn,
   text: "",
 };
 const mockSpinnerStart = jest.fn().mockReturnValue(mockSpinnerInstance);
@@ -174,6 +178,31 @@ describe("registerRestoreCommand", () => {
     expect(mockSpinnerSucceed).not.toHaveBeenCalledWith(
       expect.stringContaining("automatically created"),
     );
+  });
+
+  it("completes with a warning successfully when engine returns warnings", async () => {
+    mockCreateDatabase.mockRejectedValue(
+      new Error('database "testdb" already exists'),
+    );
+    mockRestoreDatabase.mockResolvedValue({
+      hasWarnings: true,
+      warnings: "warning: some roles or permissions could not be created",
+    });
+
+    const { program } = buildFakeProgram();
+    registerRestoreCmd(program as any);
+    await program.invokeAction("dump.sql", { db: "testdb", format: "custom" });
+
+    expect(mockRestoreDatabase).toHaveBeenCalledWith(
+      "dump.sql",
+      "testdb",
+      expect.any(Object),
+      "custom",
+    );
+    expect(mockSpinnerWarn).toHaveBeenCalledWith(
+      expect.stringContaining("Restore completed with warnings"),
+    );
+    expect(mockSpinnerSucceed).not.toHaveBeenCalled();
   });
 
   it("auto-creates the database and restores when it does not exist", async () => {
