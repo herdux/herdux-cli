@@ -199,10 +199,9 @@ describe("E2E: PostgreSQL Full Workflow", () => {
         TEST_DB,
       );
 
-      // pg_restore may return exit code 1 for non-fatal warnings
-      // (e.g., missing roles when restoring into a fresh database).
-      // The subsequent test validates the database was actually restored.
-      expect(result.exitCode).toBeLessThanOrEqual(1);
+      // The CLI should handle the pg_restore exit code 1 gracefully and return 0
+      expect(result.exitCode).toBe(0);
+      expect(result.output).toMatch(/completed with warnings/i);
     });
 
     it("should confirm the database exists again after restore", async () => {

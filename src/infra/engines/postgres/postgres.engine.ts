@@ -409,7 +409,7 @@ export class PostgresEngine implements IDatabaseEngine {
     opts: ConnectionOptions = {},
     format?: string,
     clean?: boolean,
-  ): Promise<void> {
+  ): Promise<{ hasWarnings: boolean; warnings?: string } | void> {
     const resolvedPath = resolve(inputPath);
 
     if (!existsSync(resolvedPath)) {
@@ -444,6 +444,7 @@ export class PostgresEngine implements IDatabaseEngine {
         args.push("--clean", "--if-exists");
       }
 
+      args.push("--no-owner", "--no-acl");
       args.push(resolvedPath);
 
       const result = await runCommand("pg_restore", args, {
@@ -451,12 +452,10 @@ export class PostgresEngine implements IDatabaseEngine {
         timeout: 0,
       });
 
-      if (result.exitCode === 1) {
-        throw new Error(`Restore failed with a fatal error: ${result.stderr}`);
-      } else if (result.exitCode > 1) {
-        if (result.stderr.toLowerCase().includes("fatal")) {
-          throw new Error(`Restore failed: ${result.stderr}`);
-        }
+      if (result.exitCode > 1) {
+        throw new Error(`Restore failed: ${result.stderr}`);
+      } else if (result.exitCode === 1) {
+        return { hasWarnings: true, warnings: result.stderr };
       }
     }
   }

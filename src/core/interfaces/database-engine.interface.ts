@@ -99,5 +99,5 @@ export interface IDatabaseEngine {
     opts?: ConnectionOptions,
     format?: string,
     clean?: boolean,
-  ): Promise<void>;
+  ): Promise<{ hasWarnings: boolean; warnings?: string } | void>;
 }

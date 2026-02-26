@@ -59,7 +59,7 @@ export function registerRestoreCommand(program: Command): void {
 
         spinner.text = `Restoring data into "${cmdOpts.db}"...`;
 
-        await engine.restoreDatabase(
+        const result = await engine.restoreDatabase(
           file,
           cmdOpts.db,
           opts,
@@ -71,6 +71,16 @@ export function registerRestoreCommand(program: Command): void {
           successMsg += chalk.dim(
             `\n  ↳ Note: Database did not exist and was automatically created.`,
           );
+        }
+
+        if (result && result.hasWarnings) {
+          spinner.warn(
+            successMsg +
+              chalk.yellow(
+                `\n\n⚠ Restore completed with warnings\n  - Some roles or ACLs were skipped (common when restoring production dumps locally)\n  - Database is usable and operational\n`,
+              ),
+          );
+          return;
         }
 
         spinner.succeed(successMsg + "\n");

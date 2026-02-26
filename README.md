@@ -271,6 +271,9 @@ herdux restore archive.bkp --db mydb --format custom
 herdux restore script.txt --db mydb --format plain
 ```
 
+> [!NOTE]
+> When restoring dumps from managed environments (e.g., AWS RDS), Herdux automatically configures the underlying engine to ignore ownership and role assignments. This prevents errors caused by production roles that do not exist locally. If the restore engine completes with non-fatal warnings (such as missing roles), Herdux will inform you and proceed normally rather than failing.
+
 ---
 
 ## ⚙️ Configuration & Server Profiles
