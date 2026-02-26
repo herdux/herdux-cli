@@ -28,3 +28,8 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+
+# It is being created hourly
+
+ROADMAP.md
+VISION.md

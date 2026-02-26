@@ -8,7 +8,7 @@
 
 Uma CLI rápida e interativa que remove a fricção dos workflows diários com bancos de dados locais, especialmente ao lidar com múltiplas instâncias e grandes datasets.
 
-![Version](https://img.shields.io/badge/version-0.2.1-blue.svg)
+![Version](https://img.shields.io/badge/version-0.2.3-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Node](https://img.shields.io/badge/node-18%2B-43853d.svg)
 [![GitHub Sponsors](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?style=flat&logo=github)](https://github.com/sponsors/eduardozaniboni)
@@ -71,11 +71,12 @@ Menos flags. Menos erros. Zero fadiga de terminal.
 
 ## 🎯 Para quem é o Herdux?
 
-O **Herdux** foi construído *por desenvolvedores, para desenvolvedores*. 
+O **Herdux** foi construído _por desenvolvedores, para desenvolvedores_.
 
 Ele nasceu da frustração diária de ter que constantemente restaurar backups para testar um estado específico, dropar bancos corrompidos durante o desenvolvimento e lidar com binários crus de bancos de dados toda hora.
 
 Ele é especificamente projetado para desenvolvedores que:
+
 - Gerenciam infraestruturas locais e precisam verificar o tamanho dos discos antes de popular novos bancos.
 - Querem clonar, popular (seed) e resetar bancos de dados rapidamente sem precisar ler documentações complexas.
 - Precisam de fluxos seguros de backup & restore que não dependam de scripts bash frágeis.
@@ -99,7 +100,7 @@ Se você gerencia bancos de dados localmente e compartilha dessa dor, o Herdux f
 
 ## 💡 Filosofia
 
-**Herdux** combina *herd* (manada/rebanho) e *UX* — entregando uma melhor Developer Experience ao gerenciar seus clusters de bancos de dados. O nome reflete nosso foco em melhorar a experiência de desenvolvimento ao gerenciar "manadas" de bancos.
+**Herdux** combina _herd_ (manada/rebanho) e _UX_ — entregando uma melhor Developer Experience ao gerenciar seus clusters de bancos de dados. O nome reflete nosso foco em melhorar a experiência de desenvolvimento ao gerenciar "manadas" de bancos.
 
 O **Herdux** segue três princípios:
 
@@ -242,12 +243,12 @@ herdux backup mydb --drop --yes          # Backup + drop, sem perguntas
 herdux backup mydb -o ./meus-backups     # Diretório de saída personalizado
 ```
 
-| Opção | Descrição |
-|---|---|
-| `-F, --format <tipo>` | `custom` (padrão, comprimido) ou `plain` (SQL puro) |
-| `-d, --drop` | Pergunta se deseja dropar o banco após backup bem-sucedido |
-| `-y, --yes` | Pula confirmação do drop (requer `--drop`) |
-| `-o, --output <dir>` | Diretório de saída (padrão: `./backups`) |
+| Opção                 | Descrição                                                  |
+| --------------------- | ---------------------------------------------------------- |
+| `-F, --format <tipo>` | `custom` (padrão, comprimido) ou `plain` (SQL puro)        |
+| `-d, --drop`          | Pergunta se deseja dropar o banco após backup bem-sucedido |
+| `-y, --yes`           | Pula confirmação do drop (requer `--drop`)                 |
+| `-o, --output <dir>`  | Diretório de saída (padrão: `./backups`)                   |
 
 ---
 
@@ -316,12 +317,12 @@ herdux config reset          # Limpa toda a configuração
 
 Ao resolver como se conectar, o **Herdux** segue uma ordem de prioridade estrita e previsível:
 
-| Prioridade | Fonte | Exemplo |
-|---|---|---|
-| 1️⃣ | **Flags CLI** | `herdux list --port 5417` |
-| 2️⃣ | **Perfil de servidor** | `herdux list -s pg16` |
-| 3️⃣ | **Padrões salvos** | `herdux config set port 5432` |
-| 4️⃣ | **Auto-descoberta** | Escaneia portas comuns; pergunta se encontrar múltiplas |
+| Prioridade | Fonte                  | Exemplo                                                 |
+| ---------- | ---------------------- | ------------------------------------------------------- |
+| 1️⃣         | **Flags CLI**          | `herdux list --port 5417`                               |
+| 2️⃣         | **Perfil de servidor** | `herdux list -s pg16`                                   |
+| 3️⃣         | **Padrões salvos**     | `herdux config set port 5432`                           |
+| 4️⃣         | **Auto-descoberta**    | Escaneia portas comuns; pergunta se encontrar múltiplas |
 
 Isso significa que a entrada explícita sempre vence. Sem surpresas.
 
