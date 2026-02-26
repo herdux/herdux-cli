@@ -1,10 +1,10 @@
 {
   "name": "herdux-cli",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "description": "Modern Database workflow CLI focused on developer experience, safety, and automation.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/herdux/herdux.git"
+    "url": "https://github.com/herdux/herdux-cli.git"
   },
   "type": "module",
   "main": "./dist/index.js",

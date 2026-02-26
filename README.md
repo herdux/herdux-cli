@@ -8,7 +8,7 @@
 
 A fast, interactive CLI that removes friction from daily local database workflows, especially when juggling multiple instances and large datasets.
 
-![Version](https://img.shields.io/badge/version-0.2.3-blue.svg)
+![Version](https://img.shields.io/badge/version-0.3.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Node](https://img.shields.io/badge/node-18%2B-43853d.svg)
 [![GitHub Sponsors](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?style=flat&logo=github)](https://github.com/sponsors/eduardozaniboni)
@@ -147,8 +147,8 @@ npm install -g herdux-cli
 **From source:**
 
 ```bash
-git clone https://github.com/eduardozaniboni/herdux.git
-cd herdux
+git clone https://github.com/herdux/herdux-cli.git
+cd herdux-cli
 npm install
 npm run build
 npm link
@@ -363,10 +363,15 @@ See [ROADMAP.md](./ROADMAP.md) for our detailed future plans, including Docker i
 PRs are welcome! Please open an issue first to discuss major changes.
 
 ```bash
-git clone https://github.com/eduardozaniboni/herdux.git
-cd herdux
+git clone https://github.com/herdux/herdux-cli.git
+cd herdux-cli
 npm install
 npm run dev
+
+# Run the unit test suite
+npm run test:unit
+# Run the test suite (requires Docker for E2E)
+npm run test:e2e
 ```
 
 ---

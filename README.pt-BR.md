@@ -8,7 +8,7 @@
 
 Uma CLI rápida e interativa que remove a fricção dos workflows diários com bancos de dados locais, especialmente ao lidar com múltiplas instâncias e grandes datasets.
 
-![Version](https://img.shields.io/badge/version-0.2.3-blue.svg)
+![Version](https://img.shields.io/badge/version-0.3.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Node](https://img.shields.io/badge/node-18%2B-43853d.svg)
 [![GitHub Sponsors](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?style=flat&logo=github)](https://github.com/sponsors/eduardozaniboni)
@@ -147,8 +147,8 @@ npm install -g herdux-cli
 **Pelo código-fonte:**
 
 ```bash
-git clone https://github.com/herdux/herdux.git
-cd herdux
+git clone https://github.com/herdux/herdux-cli.git
+cd herdux-cli
 npm install
 npm run build
 npm link
@@ -363,10 +363,15 @@ Consulte o [ROADMAP.md](./ROADMAP.md) para ver nossos planos futuros detalhados,
 PRs são bem-vindas! Por favor, abra uma issue primeiro para discutir mudanças significativas.
 
 ```bash
-git clone https://github.com/herdux/herdux.git
-cd herdux
+git clone https://github.com/herdux/herdux-cli.git
+cd herdux-cli
 npm install
 npm run dev
+
+# Executar testes unitários
+npm run test:unit
+# Executar testes de integração (requer Docker para E2E)
+npm run test:e2e
 ```
 
 ---
