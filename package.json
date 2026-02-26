@@ -23,8 +23,12 @@
     "start": "node dist/index.js",
     "lint:check": "prettier --check .",
     "lint:fix": "prettier --write .",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
-    "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch"
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --selectProjects unit",
+    "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch --selectProjects unit",
+    "test:unit": "node --no-warnings --experimental-vm-modules node_modules/jest/bin/jest.js --selectProjects unit",
+    "test:e2e": "node --no-warnings --experimental-vm-modules node_modules/jest/bin/jest.js --selectProjects e2e",
+    "test:e2e:up": "docker compose -f infra/docker/compose.e2e.yml up -d --wait",
+    "test:e2e:down": "docker compose -f infra/docker/compose.e2e.yml down -v --remove-orphans"
   },
   "keywords": [
     "postgresql",
