@@ -1,16 +1,22 @@
 🇧🇷 Português | 🇺🇸 [English](./README.md)
 
-# Herdux — Database Workflow CLI
-
 <p align="center">
   <strong>Infrastructure-grade power. Developer-grade experience.</strong>
 </p>
 
+<p align="center">
+  <img src=".github/assets/logo.svg" alt="Herdux banner" style="max-width: 100%; width: 600px;" />
+</p>
+
+## ⏭️ Herdux — Database Workflow CLI
+
 Uma CLI rápida e interativa que remove a fricção dos workflows diários com bancos de dados locais, especialmente ao lidar com múltiplas instâncias e grandes datasets.
 
-![Version](https://img.shields.io/badge/version-0.3.1-blue.svg)
+![Version](https://img.shields.io/badge/version-0.4.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Node](https://img.shields.io/badge/node-18%2B-43853d.svg)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=flat&logo=postgresql&logoColor=white)
+![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=flat&logo=mysql&logoColor=white)
 [![GitHub Sponsors](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?style=flat&logo=github)](https://github.com/sponsors/eduardozaniboni)
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy_Me_A_Coffee-FFDD00?style=flat&logo=buy-me-a-coffee&logoColor=black)](https://www.buymeacoffee.com/eduardozaniboni)
 
@@ -36,6 +42,31 @@ herdux list
 
 ---
 
+## 🔌 Engines Suportadas
+
+| Engine     | Status | Ferramentas Cliente Necessárias |
+| ---------- | ------ | ------------------------------- |
+| PostgreSQL | ✅     | `psql`, `pg_dump`, `pg_restore` |
+| MySQL      | ✅     | `mysql`, `mysqldump`            |
+
+O Herdux detecta automaticamente a engine a partir do seu perfil de servidor ou da flag `--engine`. PostgreSQL é o padrão quando nenhuma engine é especificada.
+
+```bash
+# PostgreSQL (padrão)
+herdux list
+herdux create mydb
+
+# MySQL
+herdux --engine mysql list
+herdux --engine mysql create mydb
+
+# Ou salve no perfil e esqueça
+herdux config add mysql-local --port 3306 --user root --password secret --engine mysql
+herdux list -s mysql-local
+```
+
+---
+
 ## Por que Herdux?
 
 Gerenciar bancos de dados locais através de scripts bash ou binários crus é repetitivo, propenso a erros e doloroso em escala.
@@ -43,17 +74,14 @@ Gerenciar bancos de dados locais através de scripts bash ou binários crus é r
 ### ❌ Sem Herdux
 
 ```bash
-# Fazer backup de um banco
-pg_dump -U postgres -h localhost -p 5416 -Fc -f ./backups/mydb_2026-02-23.dump mydb
+# Backup PostgreSQL
+pg_dump -U postgres -h localhost -p 5416 -Fc -f ./backups/mydb.dump mydb
 
-# Depois dropar manualmente
-psql -U postgres -h localhost -p 5416 -c "DROP DATABASE mydb;"
+# Backup MySQL
+mysqldump -u root -h localhost -P 3306 -p mydb > ./backups/mydb.sql
 
-# Restaurar do backup
-pg_restore -U postgres -h localhost -p 5416 -d mydb --clean --if-exists ./backups/mydb_2026-02-23.dump
-
-# Verificar se as ferramentas estão instaladas
-psql --version && pg_dump --version && pg_restore --version
+# Dropar manualmente, restaurar, verificar ferramentas...
+# Flags diferentes, ferramentas diferentes, memória muscular diferente para cada engine.
 ```
 
 ### ✅ Com Herdux
@@ -65,7 +93,7 @@ herdux clean                            # Multi-seleção e batch-drop de bancos
 herdux doctor                           # Verificação completa do sistema
 ```
 
-Menos flags. Menos erros. Zero fadiga de terminal.
+Mesmos comandos. Qualquer engine. Menos flags. Menos erros. Zero fadiga de terminal.
 
 ---
 
@@ -82,6 +110,7 @@ Ele é especificamente projetado para desenvolvedores que:
 - Precisam de fluxos seguros de backup & restore que não dependam de scripts bash frágeis.
 - Preferem ferramentas focadas no terminal (terminal-first).
 - Querem resolução previsível de conexões sem mágicas ocultas.
+- Trabalham com **múltiplas engines de banco de dados** (PostgreSQL, MySQL) e querem uma interface unificada.
 
 Se você gerencia bancos de dados localmente e compartilha dessa dor, o Herdux foi criado para você.
 
@@ -89,12 +118,13 @@ Se você gerencia bancos de dados localmente e compartilha dessa dor, o Herdux f
 
 ## 🚀 Funcionalidades Principais
 
+- **🔌 Suporte Multi-Engine** — Suporte de primeira classe para PostgreSQL e MySQL. Mesmos comandos, mesmo workflow, qualquer engine.
 - **📋 Listagem Inteligente** — Estratégia otimizada para clusters massivos. Flag opcional `--size` para análise de uso de disco, ordenado do maior para o menor.
 - **💾 Backup & Restore Inteligente** — Suporta formatos Custom (`.dump`) e Plain (`.sql`). Detecta automaticamente a ferramenta correta para restauração.
 - **🧹 Limpeza em Massa** — Multi-seleção de bancos, backup opcional e batch-drop. Recupere espaço em disco instantaneamente.
 - **🩺 Diagnóstico do Sistema** — Verificação completa de saúde com um único comando: binários, autenticação e conectividade.
-- **⚙️ Perfis Persistentes** — Salve configurações de servidor nomeadas. Alterne entre ambientes com `-s pg16`.
-- **🎯 Resolução Inteligente de Conexão** — Flags CLI explícitas → perfis → padrões salvos → auto-descoberta. Sempre previsível.
+- **⚙️ Perfis Persistentes** — Salve configurações de servidor nomeadas com tipo de engine. Alterne entre ambientes com `-s pg16`.
+- **🎯 Resolução Inteligente de Conexão e Engine** — Flags CLI explícitas → perfis → padrões salvos → auto-descoberta. Sempre previsível.
 
 ---
 
@@ -105,7 +135,7 @@ Se você gerencia bancos de dados localmente e compartilha dessa dor, o Herdux f
 O **Herdux** segue três princípios:
 
 - **Segurança primeiro** — Nunca apaga dados sem confirmação explícita ou um backup verificado.
-- **Explícito sobre implícito** — A resolução de conexão segue uma prioridade estrita e documentada. Sem mágica.
+- **Explícito sobre implícito** — A resolução de conexão e engine segue uma prioridade estrita e documentada. Sem mágica.
 - **Otimização de workflow** — Cada comando é projetado para te salvar de tarefas repetitivas no terminal.
 
 ---
@@ -116,7 +146,7 @@ O **Herdux** trata operações destrutivas com cuidado:
 
 - **Nunca dropa um banco** sem confirmação explícita
 - **Aborta toda a operação** se um backup de segurança falhar durante o `herdux clean`
-- **Valida códigos de saída do `pg_dump`** antes de considerar um backup bem-sucedido
+- **Valida códigos de saída das ferramentas de backup** antes de considerar um backup bem-sucedido
 - **Requer a flag `--drop`** intencionalmente — dropar nunca é o padrão
 - **`--yes` deve ser combinado com `--drop`** — não é possível pular confirmação sozinho
 
@@ -127,10 +157,11 @@ O **Herdux** trata operações destrutivas com cuidado:
 ## 🧩 Requisitos
 
 - **Node.js** 18 ou superior
-- **Ferramentas cliente PostgreSQL** (`psql`, `pg_dump`, `pg_restore`) instaladas e disponíveis no `PATH`
+- **Para PostgreSQL:** `psql`, `pg_dump`, `pg_restore` instalados e disponíveis no `PATH`
+- **Para MySQL:** `mysql`, `mysqldump` instalados e disponíveis no `PATH`
 
 > [!TIP]
-> Execute `herdux doctor` após a instalação para verificar se tudo está configurado corretamente.
+> Execute `herdux doctor` após a instalação para verificar se tudo está configurado corretamente. O comando doctor verifica as ferramentas da engine ativa.
 
 ---
 
@@ -158,24 +189,28 @@ npm link
 
 ## 🛠️ Comandos
 
+Todos os comandos funcionam tanto com PostgreSQL quanto com MySQL. Use `--engine mysql` ou configure a engine no seu perfil de servidor.
+
 ### `herdux version`
 
-Mostra a versão da CLI e a versão do servidor PostgreSQL conectado.
+Mostra a versão da CLI e a versão do servidor de banco de dados conectado.
 
 ```bash
 herdux version
+herdux --engine mysql version
 ```
 
 ### `herdux doctor`
 
 Executa uma verificação completa de saúde do sistema:
 
-- Verifica se `psql`, `pg_dump` e `pg_restore` estão instalados e acessíveis
+- Verifica se as ferramentas cliente necessárias estão instaladas e acessíveis (específicas por engine)
 - Tenta uma conexão real usando a configuração resolvida
 - Testa autenticação contra o servidor alvo
 
 ```bash
 herdux doctor
+herdux --engine mysql doctor
 ```
 
 ---
@@ -190,7 +225,7 @@ herdux ls --size         # Inclui tamanho em disco, ordenado do maior → menor
 ```
 
 > [!NOTE]
-> A flag `--size` calcula o uso físico de disco via `pg_database_size()`. Em servidores com dezenas de bancos multi-GB, isso pode levar alguns minutos dependendo da velocidade do disco.
+> A flag `--size` calcula o uso físico de disco. Em servidores com dezenas de bancos multi-GB, isso pode levar alguns minutos dependendo da velocidade do disco.
 
 ---
 
@@ -200,6 +235,7 @@ Cria um novo banco de dados.
 
 ```bash
 herdux create meu_novo_db
+herdux --engine mysql create meu_novo_db
 ```
 
 ### `herdux drop <nome>`
@@ -236,7 +272,7 @@ Projetado para o workflow real do desenvolvedor: clonar bancos, experimentar, de
 Gera um backup com timestamp em `./backups/`.
 
 ```bash
-herdux backup mydb                       # Formato custom (.dump)
+herdux backup mydb                       # Formato custom (.dump para PG, .sql para MySQL)
 herdux backup mydb --format plain        # SQL puro (.sql)
 herdux backup mydb --drop                # Backup, depois pergunta se quer dropar
 herdux backup mydb --drop --yes          # Backup + drop, sem perguntas
@@ -256,8 +292,8 @@ herdux backup mydb -o ./meus-backups     # Diretório de saída personalizado
 
 Restaura um banco de dados a partir de um arquivo de backup. Detecta automaticamente o formato:
 
-- `.sql` → usa `psql -f`
-- `.dump` ou qualquer outra extensão → usa `pg_restore`
+- `.sql` → usa a ferramenta de importação SQL apropriada
+- `.dump` ou qualquer outra extensão → usa a ferramenta de restore apropriada
 
 ```bash
 herdux restore ./backups/mydb_2026-02-23.dump --db mydb
@@ -283,6 +319,7 @@ O `herdux` armazena configurações localmente em `~/.herdux/config.json`.
 ### Definir Padrões Globais
 
 ```bash
+herdux config set engine postgres        # Engine padrão
 herdux config set user postgres
 herdux config set password minha_senha
 herdux config set port 5432
@@ -293,8 +330,14 @@ herdux config set port 5432
 Gerencie múltiplas instâncias de banco de dados sem esforço:
 
 ```bash
+# Perfis PostgreSQL
 herdux config add pg16 --port 5416
 herdux config add pg17 --port 5417 --user admin
+
+# Perfis MySQL (a engine é salva no perfil)
+herdux config add mysql-dev --port 3306 --user root --password secret --engine mysql
+
+# Servidores remotos
 herdux config add staging --host 192.168.0.10 --port 5432
 ```
 
@@ -302,8 +345,10 @@ Depois conecte usando a flag `-s`:
 
 ```bash
 herdux list -s pg16
-herdux backup mydb -s staging
+herdux backup mydb -s mysql-dev
 ```
+
+Ou simplesmente execute um comando sem flags — se você tiver perfis salvos, o Herdux mostrará um menu de seleção interativo exibindo a engine de cada perfil.
 
 ### Visualizar & Gerenciar Config
 
@@ -316,9 +361,20 @@ herdux config reset          # Limpa toda a configuração
 
 ---
 
-## 🔌 Prioridade de Conexão
+## 🔌 Resolução de Conexão e Engine
 
-Ao resolver como se conectar, o **Herdux** segue uma ordem de prioridade estrita e previsível:
+Ao resolver como se conectar e qual engine usar, o **Herdux** segue uma ordem de prioridade estrita e previsível:
+
+### Prioridade da Engine
+
+| Prioridade | Fonte            | Exemplo                          |
+| ---------- | ---------------- | -------------------------------- |
+| 1️⃣         | **Flag CLI**     | `herdux --engine mysql list`     |
+| 2️⃣         | **Perfil**       | Campo `engine` do perfil         |
+| 3️⃣         | **Padrão salvo** | `herdux config set engine mysql` |
+| 4️⃣         | **Fallback**     | `postgres`                       |
+
+### Prioridade da Conexão
 
 | Prioridade | Fonte                  | Exemplo                                                 |
 | ---------- | ---------------------- | ------------------------------------------------------- |
@@ -331,7 +387,7 @@ Isso significa que a entrada explícita sempre vence. Sem surpresas.
 
 ---
 
-## 🤔 Por que não pgAdmin?
+## 🤔 Por que não pgAdmin / phpMyAdmin?
 
 O **Herdux** não é um substituto de GUI.
 É um acelerador de workflow para desenvolvedores que vivem no terminal.
@@ -344,14 +400,15 @@ Sem GUI. Sem overhead. Só velocidade.
 
 - Sem padrões ocultos (hidden defaults).
 - Sem mágicas destrutivas.
-- Resolução de conexão determinística.
+- Resolução determinística de conexão e engine.
 - Comandos explícitos e combináveis.
+- Engine-agnostic: mesma interface, qualquer banco de dados.
 
 ---
 
 ## 🐳 Suporte Docker (Em Breve)
 
-O **Herdux** poderá detectar e interagir com instâncias PostgreSQL rodando dentro de containers Docker — listando, conectando e gerenciando-as tão naturalmente quanto instâncias locais.
+O **Herdux** poderá detectar e interagir com instâncias de banco de dados rodando dentro de containers Docker — listando, conectando e gerenciando-as tão naturalmente quanto instâncias locais.
 
 ---
 
@@ -373,8 +430,9 @@ npm run dev
 
 # Executar testes unitários
 npm run test:unit
-# Executar testes de integração (requer Docker para E2E)
-npm run test:e2e
+# Executar testes E2E (requer Docker)
+npm run test:e2e:pgsql
+npm run test:e2e:mysql
 ```
 
 ---
