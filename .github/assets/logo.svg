@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="11 32 294 74" width="294" height="74">
+
+  <!-- [4] smallest, furthest back -->
+  <polyline
+    points="14,57  28,65  14,73"
+    fill="none" stroke="#5b4af7" stroke-width="3"
+    stroke-linecap="round" stroke-linejoin="round"
+    opacity="0.30"
+  />
+
+  <!-- [3] -->
+  <polyline
+    points="28,53  42,65  28,77"
+    fill="none" stroke="#5b4af7" stroke-width="4.5"
+    stroke-linecap="round" stroke-linejoin="round"
+    opacity="0.48"
+  />
+
+  <!-- [2] -->
+  <polyline
+    points="44,49  58,65  44,81"
+    fill="none" stroke="#5b4af7" stroke-width="6.5"
+    stroke-linecap="round" stroke-linejoin="round"
+    opacity="0.68"
+  />
+
+  <!-- [1] LEAD — largest, full opacity -->
+  <polyline
+    points="60,45  76,65  60,85"
+    fill="none" stroke="#5b4af7" stroke-width="9"
+    stroke-linecap="round" stroke-linejoin="round"
+    opacity="1"
+  />
+
+  <!-- WORDMARK — baseline at 84, cap-height centers on y=65 -->
+  <text
+    x="92"
+    y="84"
+    font-family="'DM Sans', 'Outfit', 'Plus Jakarta Sans', 'Segoe UI', sans-serif"
+    font-size="52"
+    font-weight="800"
+    letter-spacing="-2"
+    fill="#5b4af7"
+  >Herdux</text>
+
+</svg>

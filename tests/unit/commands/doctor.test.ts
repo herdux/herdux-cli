@@ -8,23 +8,27 @@ import type {
 
 const mockGetHealthChecks = jest.fn<() => HealthCheck[]>();
 
+const mockEngine = {
+  getHealthChecks: mockGetHealthChecks,
+};
+
 jest.unstable_mockModule(
-  "../../../src/infra/engines/postgres/postgres.engine.js",
+  "../../../src/infra/engines/engine-factory.js",
   () => ({
-    PostgresEngine: jest.fn().mockImplementation(() => ({
-      getHealthChecks: mockGetHealthChecks,
-    })),
+    createEngine: jest.fn().mockReturnValue(mockEngine),
   }),
 );
 
 jest.unstable_mockModule(
-  "../../../src/infra/engines/postgres/resolve-connection.js",
+  "../../../src/infra/engines/resolve-connection.js",
   () => ({
-    resolveConnectionOptions: jest
-      .fn()
-      .mockImplementation(() =>
-        Promise.resolve({ host: "localhost", port: 5432, user: "postgres" }),
-      ),
+    resolveEngineAndConnection: jest.fn().mockImplementation(() =>
+      Promise.resolve({
+        engine: mockEngine,
+        engineType: "postgres",
+        opts: { host: "localhost", port: 5432, user: "postgres" },
+      }),
+    ),
   }),
 );
 

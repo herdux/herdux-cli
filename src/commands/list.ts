@@ -1,9 +1,7 @@
 import type { Command } from "commander";
 import chalk from "chalk";
 import ora from "ora";
-import { PostgresEngine } from "../infra/engines/postgres/postgres.engine.js";
-import type { ConnectionOptions } from "../core/interfaces/database-engine.interface.js";
-import { resolveConnectionOptions } from "../infra/engines/postgres/resolve-connection.js";
+import { resolveEngineAndConnection } from "../infra/engines/resolve-connection.js";
 
 export function registerListCommand(program: Command): void {
   program
@@ -16,14 +14,9 @@ export function registerListCommand(program: Command): void {
     )
     .action(async (options: { size?: boolean }) => {
       try {
-        const engine = new PostgresEngine();
-        await engine.checkClientVersion();
-
         const rawOpts = program.opts();
-        const opts = await resolveConnectionOptions(
-          rawOpts as ConnectionOptions,
-          rawOpts.server,
-        );
+        const { engine, opts } = await resolveEngineAndConnection(rawOpts);
+        await engine.checkClientVersion();
 
         const spinner = ora(
           options.size

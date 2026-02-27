@@ -7,27 +7,31 @@ const mockCheckBackupRequirements = jest.fn<() => Promise<void>>();
 const mockBackupDatabase = jest.fn<() => Promise<string>>();
 const mockDropDatabase = jest.fn<() => Promise<void>>();
 
+const mockEngine = {
+  checkClientVersion: mockCheckClientVersion,
+  checkBackupRequirements: mockCheckBackupRequirements,
+  backupDatabase: mockBackupDatabase,
+  dropDatabase: mockDropDatabase,
+  getEngineName: jest.fn().mockReturnValue("PostgreSQL"),
+};
+
 jest.unstable_mockModule(
-  "../../../src/infra/engines/postgres/postgres.engine.js",
+  "../../../src/infra/engines/engine-factory.js",
   () => ({
-    PostgresEngine: jest.fn().mockImplementation(() => ({
-      checkClientVersion: mockCheckClientVersion,
-      checkBackupRequirements: mockCheckBackupRequirements,
-      backupDatabase: mockBackupDatabase,
-      dropDatabase: mockDropDatabase,
-      getEngineName: jest.fn().mockReturnValue("PostgreSQL"),
-    })),
+    createEngine: jest.fn().mockReturnValue(mockEngine),
   }),
 );
 
 jest.unstable_mockModule(
-  "../../../src/infra/engines/postgres/resolve-connection.js",
+  "../../../src/infra/engines/resolve-connection.js",
   () => ({
-    resolveConnectionOptions: jest
-      .fn()
-      .mockImplementation(() =>
-        Promise.resolve({ host: "localhost", port: 5432, user: "postgres" }),
-      ),
+    resolveEngineAndConnection: jest.fn().mockImplementation(() =>
+      Promise.resolve({
+        engine: mockEngine,
+        engineType: "postgres",
+        opts: { host: "localhost", port: 5432, user: "postgres" },
+      }),
+    ),
   }),
 );
 
@@ -251,5 +255,35 @@ describe("registerBackupCommand", () => {
       expect.stringContaining("Disk full"),
     );
     expect(processExitSpy).toHaveBeenCalledWith(1);
+  });
+
+  it("fails and exits if checkClientVersion throws", async () => {
+    mockCheckClientVersion.mockRejectedValue(new Error("pg_dump not found"));
+    const { program } = buildFakeProgram();
+    registerBackupCmd(program as any);
+    await program.invokeAction("testdb", { format: "custom" });
+
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("pg_dump not found"),
+    );
+    expect(processExitSpy).toHaveBeenCalledWith(1);
+    expect(mockBackupDatabase).not.toHaveBeenCalled();
+  });
+
+  it("successfully generates a backup in plain format", async () => {
+    mockBackupDatabase.mockResolvedValue("/output/path/backup.sql");
+    const { program } = buildFakeProgram();
+    registerBackupCmd(program as any);
+    await program.invokeAction("testdb", { format: "plain" });
+
+    expect(mockBackupDatabase).toHaveBeenCalledWith(
+      "testdb",
+      "/default/backup/dir",
+      expect.any(Object),
+      "plain",
+    );
+    expect(mockSpinnerSucceed).toHaveBeenLastCalledWith(
+      "Backup saved at /output/path/backup.sql\n",
+    );
   });
 });

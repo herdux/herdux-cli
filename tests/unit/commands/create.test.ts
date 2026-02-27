@@ -5,25 +5,29 @@ import { jest } from "@jest/globals";
 const mockCheckClientVersion = jest.fn<() => Promise<void>>();
 const mockCreateDatabase = jest.fn<() => Promise<void>>();
 
+const mockEngine = {
+  checkClientVersion: mockCheckClientVersion,
+  createDatabase: mockCreateDatabase,
+  getEngineName: jest.fn().mockReturnValue("PostgreSQL"),
+};
+
 jest.unstable_mockModule(
-  "../../../src/infra/engines/postgres/postgres.engine.js",
+  "../../../src/infra/engines/engine-factory.js",
   () => ({
-    PostgresEngine: jest.fn().mockImplementation(() => ({
-      checkClientVersion: mockCheckClientVersion,
-      createDatabase: mockCreateDatabase,
-      getEngineName: jest.fn().mockReturnValue("PostgreSQL"),
-    })),
+    createEngine: jest.fn().mockReturnValue(mockEngine),
   }),
 );
 
 jest.unstable_mockModule(
-  "../../../src/infra/engines/postgres/resolve-connection.js",
+  "../../../src/infra/engines/resolve-connection.js",
   () => ({
-    resolveConnectionOptions: jest
-      .fn()
-      .mockImplementation(() =>
-        Promise.resolve({ host: "localhost", port: 5432, user: "postgres" }),
-      ),
+    resolveEngineAndConnection: jest.fn().mockImplementation(() =>
+      Promise.resolve({
+        engine: mockEngine,
+        engineType: "postgres",
+        opts: { host: "localhost", port: 5432, user: "postgres" },
+      }),
+    ),
   }),
 );
 
@@ -158,5 +162,32 @@ describe("registerCreateCommand", () => {
       expect.stringContaining("unexpected string error"),
     );
     expect(processExitSpy).toHaveBeenLastCalledWith(1);
+  });
+
+  it("passes the config options to resolveEngineAndConnection", async () => {
+    const { resolveEngineAndConnection: mockResolver } =
+      await import("../../../src/infra/engines/resolve-connection.js");
+    const { program } = buildFakeProgram({ engine: "mysql" });
+    registerCreateCmd(program as any);
+    await program.invokeAction("testdb");
+
+    expect(mockResolver).toHaveBeenCalledWith(
+      expect.objectContaining({ engine: "mysql" }),
+    );
+  });
+
+  it("fails and exits if checkClientVersion throws", async () => {
+    mockCheckClientVersion.mockRejectedValue(
+      new Error("mysql client not found"),
+    );
+    const { program } = buildFakeProgram();
+    registerCreateCmd(program as any);
+    await program.invokeAction("testdb");
+
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("mysql client not found"),
+    );
+    expect(processExitSpy).toHaveBeenCalledWith(1);
+    expect(mockCreateDatabase).not.toHaveBeenCalled();
   });
 });

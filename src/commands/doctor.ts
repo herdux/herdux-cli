@@ -1,9 +1,7 @@
 import type { Command } from "commander";
 import chalk from "chalk";
 import ora from "ora";
-import { resolveConnectionOptions } from "../infra/engines/postgres/resolve-connection.js";
-import { PostgresEngine } from "../infra/engines/postgres/postgres.engine.js";
-import type { ConnectionOptions } from "../core/interfaces/database-engine.interface.js";
+import { resolveEngineAndConnection } from "../infra/engines/resolve-connection.js";
 
 export function registerDoctorCommand(program: Command): void {
   program
@@ -15,12 +13,7 @@ export function registerDoctorCommand(program: Command): void {
       );
 
       const rawOpts = program.opts();
-      const opts = await resolveConnectionOptions(
-        rawOpts as ConnectionOptions,
-        rawOpts.server,
-      );
-
-      const engine = new PostgresEngine();
+      const { engine, opts } = await resolveEngineAndConnection(rawOpts);
       const checks = engine.getHealthChecks();
 
       let allOk = true;

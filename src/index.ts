@@ -30,7 +30,8 @@ program
   .option("-p, --port <port>", "Database port (auto-detected if omitted)")
   .option("-U, --user <user>", "Database user")
   .option("-W, --password <password>", "Database password")
-  .option("-s, --server <name>", "Use a named server profile from config");
+  .option("-s, --server <name>", "Use a named server profile from config")
+  .option("-e, --engine <type>", "Database engine (postgres, mysql)");
 
 registerVersionCommand(program);
 registerListCommand(program);

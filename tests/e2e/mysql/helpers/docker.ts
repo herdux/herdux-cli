@@ -2,12 +2,14 @@ import { execa } from "execa";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 
-// --- PostgreSQL Integration Test Connection Constants ---
+// --- MySQL Integration Test Connection Constants ---
 
-export const PG_HOST = "localhost";
-export const PG_PORT = "5499";
-export const PG_USER = "herdux_test";
-export const PG_PASSWORD = "herdux_test";
+export const MYSQL_HOST = "127.0.0.1";
+export const MYSQL_PORT = "3399";
+// We use root instead of MYSQL_USER because the Docker-created user
+// only has privileges on MYSQL_DATABASE, not global CREATE/DROP.
+export const MYSQL_USER = "root";
+export const MYSQL_PASSWORD = "herdux_test"; // matches MYSQL_ROOT_PASSWORD
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -19,15 +21,15 @@ const COMPOSE_FILE = resolve(
   "..",
   "infra",
   "docker",
-  "compose.e2e-pgsql.yml",
+  "compose.e2e-mysql.yml",
 );
 
 /**
- * Starts the PostgreSQL test container via docker compose.
+ * Starts the MySQL test container via docker compose.
  * Waits until the healthcheck passes before returning.
  */
 export async function startContainer(): Promise<void> {
-  console.log("\nStarting PostgreSQL integration test container...");
+  console.log("\nStarting MySQL integration test container...");
 
   await execa("docker", ["compose", "-f", COMPOSE_FILE, "up", "-d", "--wait"], {
     stdio: "inherit",
@@ -37,10 +39,10 @@ export async function startContainer(): Promise<void> {
 }
 
 /**
- * Stops and removes the PostgreSQL test container and its volumes.
+ * Stops and removes the MySQL test container and its volumes.
  */
 export async function stopContainer(): Promise<void> {
-  console.log("\nStopping PostgreSQL integration test container...");
+  console.log("\nStopping MySQL integration test container...");
 
   await execa(
     "docker",

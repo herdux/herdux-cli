@@ -3,7 +3,7 @@ import chalk from "chalk";
 import * as config from "../infra/config/config.service.js";
 import { logger } from "../presentation/logger.js";
 
-const VALID_KEYS = ["host", "port", "user", "password", "output"];
+const VALID_KEYS = ["host", "port", "user", "password", "output", "engine"];
 
 export function registerConfigCommand(program: Command): void {
   const configCmd = program
@@ -15,7 +15,7 @@ export function registerConfigCommand(program: Command): void {
   configCmd
     .command("set <key> <value>")
     .description(
-      "Set a default config value (host, port, user, password, output)",
+      "Set a default config value (engine, host, port, user, password, output)",
     )
     .action((key: string, value: string) => {
       if (!VALID_KEYS.includes(key)) {
@@ -81,7 +81,11 @@ export function registerConfigCommand(program: Command): void {
         console.log(chalk.bold("  Server Profiles:"));
         for (const name of serverNames) {
           const srv = servers[name];
+          const engineLabel = srv.engine
+            ? `engine=${chalk.yellow(srv.engine)}`
+            : "";
           const parts = [
+            engineLabel,
             srv.host && `host=${srv.host}`,
             srv.port && `port=${chalk.cyan(srv.port)}`,
             srv.user && `user=${srv.user}`,
@@ -118,11 +122,12 @@ export function registerConfigCommand(program: Command): void {
     .command("add-server <name>")
     .alias("add")
     .description(
-      "Add a named server profile (uses global --host, --port, --user, --password)",
+      "Add a named server profile (uses global --engine, --host, --port, --user, --password)",
     )
     .action((name: string) => {
       const globalOpts = program.opts();
       const serverOpts = {
+        ...(globalOpts.engine && { engine: globalOpts.engine }),
         ...(globalOpts.host && { host: globalOpts.host }),
         ...(globalOpts.port && { port: globalOpts.port }),
         ...(globalOpts.user && { user: globalOpts.user }),
@@ -131,7 +136,7 @@ export function registerConfigCommand(program: Command): void {
 
       if (Object.keys(serverOpts).length === 0) {
         logger.error(
-          "Provide at least one option (--host, --port, --user, --password)",
+          "Provide at least one option (--engine, --host, --port, --user, --password)",
         );
         process.exit(1);
       }
@@ -140,7 +145,8 @@ export function registerConfigCommand(program: Command): void {
       logger.success(`Server profile "${chalk.green(name)}" saved`);
 
       const parts = [
-        serverOpts.host && ` host=${serverOpts.host}`,
+        serverOpts.engine && `engine=${serverOpts.engine}`,
+        serverOpts.host && `host=${serverOpts.host}`,
         serverOpts.port && `port=${serverOpts.port}`,
         serverOpts.user && `user=${serverOpts.user}`,
         serverOpts.password && `password=••••••`,

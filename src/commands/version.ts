@@ -1,7 +1,7 @@
 import type { Command } from "commander";
 import chalk from "chalk";
 import ora from "ora";
-import { PostgresEngine } from "../infra/engines/postgres/postgres.engine.js";
+import { resolveEngineAndConnection } from "../infra/engines/resolve-connection.js";
 
 export function registerVersionCommand(program: Command): void {
   program
@@ -9,14 +9,14 @@ export function registerVersionCommand(program: Command): void {
     .description("Show Database client and server versions")
     .action(async () => {
       try {
-        const engine = new PostgresEngine();
+        const rawOpts = program.opts();
+        const { engine, opts } = await resolveEngineAndConnection(rawOpts);
         const clientVersion = await engine.checkClientVersion();
         console.log(
           chalk.bold.cyan(`\n--- ${engine.getEngineName()} Client ---`),
         );
         console.log(`   ${clientVersion}`);
 
-        const opts = program.opts();
         const spinner = ora(
           `Scanning for running ${engine.getEngineName()} servers...`,
         ).start();
