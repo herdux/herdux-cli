@@ -7,18 +7,22 @@ import {
 } from "fs";
 import { join } from "path";
 import { homedir } from "os";
-import type { ConnectionOptions } from "../../core/interfaces/database-engine.interface.js";
+import type {
+  ConnectionOptions,
+  EngineType,
+} from "../../core/interfaces/database-engine.interface.js";
 
 const CONFIG_DIR = join(homedir(), ".herdux");
 const CONFIG_FILE = join(CONFIG_DIR, "config.json");
 
 export interface ServerProfile extends ConnectionOptions {
   name?: string;
+  engine?: EngineType;
 }
 
 export interface HerduxConfig {
-  default: ConnectionOptions & { output?: string };
-  servers: Record<string, ConnectionOptions>;
+  default: ConnectionOptions & { output?: string; engine?: EngineType };
+  servers: Record<string, ServerProfile>;
   scan_ports: string[];
 }
 
@@ -56,12 +60,15 @@ export function saveConfig(config: HerduxConfig): void {
   writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2), "utf-8");
 }
 
-export function getDefault(): ConnectionOptions & { output?: string } {
+export function getDefault(): ConnectionOptions & {
+  output?: string;
+  engine?: EngineType;
+} {
   const config = loadConfig();
   return config.default;
 }
 
-export function getServer(name: string): ConnectionOptions | null {
+export function getServer(name: string): ServerProfile | null {
   const config = loadConfig();
   return config.servers[name] ?? null;
 }
@@ -72,7 +79,7 @@ export function setDefault(key: string, value: string): void {
   saveConfig(config);
 }
 
-export function addServer(name: string, opts: ConnectionOptions): void {
+export function addServer(name: string, opts: ServerProfile): void {
   const config = loadConfig();
   config.servers[name] = { ...config.servers[name], ...opts };
   saveConfig(config);
@@ -86,7 +93,7 @@ export function removeServer(name: string): boolean {
   return true;
 }
 
-export function listServers(): Record<string, ConnectionOptions> {
+export function listServers(): Record<string, ServerProfile> {
   const config = loadConfig();
   return config.servers;
 }

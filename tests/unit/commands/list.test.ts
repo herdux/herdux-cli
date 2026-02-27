@@ -6,25 +6,29 @@ import type { DatabaseInfo } from "../../../src/core/interfaces/database-engine.
 const mockCheckClientVersion = jest.fn<() => Promise<void>>();
 const mockListDatabases = jest.fn<() => Promise<DatabaseInfo[]>>();
 
+const mockEngine = {
+  checkClientVersion: mockCheckClientVersion,
+  listDatabases: mockListDatabases,
+  getEngineName: jest.fn().mockReturnValue("PostgreSQL"),
+};
+
 jest.unstable_mockModule(
-  "../../../src/infra/engines/postgres/postgres.engine.js",
+  "../../../src/infra/engines/engine-factory.js",
   () => ({
-    PostgresEngine: jest.fn().mockImplementation(() => ({
-      checkClientVersion: mockCheckClientVersion,
-      listDatabases: mockListDatabases,
-      getEngineName: jest.fn().mockReturnValue("PostgreSQL"),
-    })),
+    createEngine: jest.fn().mockReturnValue(mockEngine),
   }),
 );
 
 jest.unstable_mockModule(
-  "../../../src/infra/engines/postgres/resolve-connection.js",
+  "../../../src/infra/engines/resolve-connection.js",
   () => ({
-    resolveConnectionOptions: jest
-      .fn()
-      .mockImplementation(() =>
-        Promise.resolve({ host: "localhost", port: 5432, user: "postgres" }),
-      ),
+    resolveEngineAndConnection: jest.fn().mockImplementation(() =>
+      Promise.resolve({
+        engine: mockEngine,
+        engineType: "postgres",
+        opts: { host: "localhost", port: 5432, user: "postgres" },
+      }),
+    ),
   }),
 );
 

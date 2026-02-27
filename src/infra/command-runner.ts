@@ -10,6 +10,8 @@ export interface RunOptions {
   cwd?: string;
   env?: Record<string, string>;
   timeout?: number;
+  /** Path to a file whose contents will be piped into stdin */
+  stdin?: string;
 }
 
 export async function runCommand(
@@ -22,6 +24,7 @@ export async function runCommand(
     timeout: options.timeout ?? 30_000,
     ...(options.cwd && { cwd: options.cwd }),
     ...(options.env && { env: { ...process.env, ...options.env } }),
+    ...(options.stdin && { inputFile: options.stdin }),
   };
   const result = await execa(command, args, execaOptions);
 

@@ -8,14 +8,13 @@ import { runCli } from "./helpers/cli.js";
 // --- Constants ---
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const TEST_DB = "herdux_integration_testdb";
+const TEST_DB = "herdux_mysql_testdb";
 const PROJECT_ROOT = resolve(__dirname, "..", "..", "..");
-const BACKUP_DIR = resolve(PROJECT_ROOT, "tests", "e2e", "postgres", "backups");
-const TMP_HOME = resolve(PROJECT_ROOT, "tests", "e2e", "postgres", ".tmp-home");
+const BACKUP_DIR = resolve(PROJECT_ROOT, "tests", "e2e", "mysql", "backups");
+const TMP_HOME = resolve(PROJECT_ROOT, "tests", "e2e", "mysql", ".tmp-home");
 
 // Track backup file paths for restore tests
-let customBackupPath: string;
-let plainBackupPath: string;
+let sqlBackupPath: string;
 
 // --- Lifecycle ---
 
@@ -40,17 +39,16 @@ afterAll(async () => {
 // --- Tests ---
 // Tests are designed to run sequentially (Jest default for a single file).
 
-describe("E2E: PostgreSQL Full Workflow", () => {
+describe("E2E: MySQL Full Workflow", () => {
   // ─── Doctor ───
 
   describe("doctor", () => {
-    it("should verify system health", async () => {
+    it("should verify system health for MySQL", async () => {
       const result = await runCli("doctor");
 
       expect(result.exitCode).toBe(0);
-      expect(result.output).toContain("psql");
-      expect(result.output).toContain("pg_dump");
-      expect(result.output).toContain("pg_restore");
+      expect(result.output).toContain("mysql");
+      expect(result.output).toContain("mysqldump");
     });
   });
 
@@ -65,35 +63,13 @@ describe("E2E: PostgreSQL Full Workflow", () => {
     });
   });
 
-  // ─── Config ───
-
-  describe("config", () => {
-    it("should set and get a config value", async () => {
-      const setResult = await runCli("config", "set", "port", "9999");
-      expect(setResult.exitCode).toBe(0);
-
-      const getResult = await runCli("config", "get", "port");
-      expect(getResult.exitCode).toBe(0);
-      expect(getResult.stdout).toContain("9999");
-    });
-
-    it("should list configuration", async () => {
-      const result = await runCli("config", "list");
-
-      expect(result.exitCode).toBe(0);
-      expect(result.stdout).toContain("9999");
-    });
-
-    it("should reset configuration", async () => {
-      const resetResult = await runCli("config", "reset");
-      expect(resetResult.exitCode).toBe(0);
-    });
-  });
-
-  // ─── Create ───
-
   describe("create", () => {
     it("should create a new database", async () => {
+      // Add a slight delay because the previous `version` command runs a port scan.
+      // In WSL/Docker, rapid sequential connections from the scan followed immediately
+      // by a new connection attempt can cause `EAGAIN (System Error 11: Lost connection)`.
+      await new Promise((r) => setTimeout(r, 1500));
+
       const result = await runCli("create", TEST_DB);
 
       expect(result.exitCode).toBe(0);
@@ -127,78 +103,10 @@ describe("E2E: PostgreSQL Full Workflow", () => {
     });
   });
 
-  // ─── Backup (custom format) ───
+  // ─── Backup (plain / mysqldump default) ───
 
-  describe("backup (custom)", () => {
-    it("should create a backup in custom format (.dump)", async () => {
-      const result = await runCli(
-        "backup",
-        TEST_DB,
-        "--format",
-        "custom",
-        "--output",
-        BACKUP_DIR,
-      );
-
-      expect(result.exitCode).toBe(0);
-      expect(result.output).toMatch(/backup saved/i);
-
-      const files = readdirSync(BACKUP_DIR);
-      const dumpFile = files.find((f) => f.endsWith(".dump"));
-      expect(dumpFile).toBeDefined();
-      customBackupPath = resolve(BACKUP_DIR, dumpFile!);
-    });
-  });
-
-  // ─── Backup --drop --yes ───
-
-  describe("backup --drop --yes", () => {
-    it("should backup and immediately drop the database", async () => {
-      const result = await runCli(
-        "backup",
-        TEST_DB,
-        "--drop",
-        "--yes",
-        "--output",
-        BACKUP_DIR,
-      );
-
-      expect(result.exitCode).toBe(0);
-      expect(result.output).toMatch(/backup saved/i);
-      expect(result.output).toMatch(/dropped/i);
-    });
-
-    it("should confirm the database no longer exists", async () => {
-      const result = await runCli("list");
-
-      expect(result.exitCode).toBe(0);
-      expect(result.stdout).not.toContain(TEST_DB);
-    });
-  });
-
-  // ─── Restore (custom format) ───
-
-  describe("restore (custom)", () => {
-    it("should restore the database from .dump backup", async () => {
-      const result = await runCli("restore", customBackupPath, "--db", TEST_DB);
-
-      // The CLI should handle the pg_restore exit code 1 gracefully and return 0
-      expect(result.exitCode).toBe(0);
-      expect(result.output).toMatch(/completed with warnings/i);
-    });
-
-    it("should confirm the database exists again after restore", async () => {
-      const result = await runCli("list");
-
-      expect(result.exitCode).toBe(0);
-      expect(result.stdout).toContain(TEST_DB);
-    });
-  });
-
-  // ─── Backup (plain format) ───
-
-  describe("backup (plain)", () => {
-    it("should create a backup in plain format (.sql)", async () => {
+  describe("backup", () => {
+    it("should create a backup in plain SQL format", async () => {
       const result = await runCli(
         "backup",
         TEST_DB,
@@ -214,7 +122,7 @@ describe("E2E: PostgreSQL Full Workflow", () => {
       const files = readdirSync(BACKUP_DIR);
       const sqlFile = files.find((f) => f.endsWith(".sql"));
       expect(sqlFile).toBeDefined();
-      plainBackupPath = resolve(BACKUP_DIR, sqlFile!);
+      sqlBackupPath = resolve(BACKUP_DIR, sqlFile!);
     });
   });
 
@@ -236,17 +144,17 @@ describe("E2E: PostgreSQL Full Workflow", () => {
     });
   });
 
-  // ─── Restore (plain format) ───
+  // ─── Restore ───
 
-  describe("restore (plain)", () => {
+  describe("restore", () => {
     it("should restore the database from .sql backup", async () => {
-      const result = await runCli("restore", plainBackupPath, "--db", TEST_DB);
+      const result = await runCli("restore", sqlBackupPath, "--db", TEST_DB);
 
       expect(result.exitCode).toBe(0);
       expect(result.output).toMatch(/restored/i);
     });
 
-    it("should confirm the database exists after plain restore", async () => {
+    it("should confirm the database exists after restore", async () => {
       const result = await runCli("list");
 
       expect(result.exitCode).toBe(0);

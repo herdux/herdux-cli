@@ -11,6 +11,8 @@ export interface DatabaseInfo {
   size?: string;
 }
 
+export type EngineType = "postgres" | "mysql";
+
 export interface ConnectionOptions {
   host?: string;
   port?: string;
@@ -39,6 +41,11 @@ export interface IDatabaseEngine {
    * Returns the display name of the database engine (e.g., "PostgreSQL").
    */
   getEngineName(): string;
+
+  /**
+   * Returns engine-specific default connection options (host, port, user).
+   */
+  getDefaultConnectionOptions(): ConnectionOptions;
 
   /**
    * Validates the client tools (e.g., psql) and returns the client version.

@@ -4,30 +4,33 @@ import { jest } from "@jest/globals";
 
 const mockCheckClientVersion = jest.fn<() => Promise<void>>();
 const mockCreateDatabase = jest.fn<() => Promise<void>>();
-const mockRestoreDatabase = jest.fn<
-  () => Promise<{ hasWarnings?: boolean; warnings?: string } | void>
->();
+const mockRestoreDatabase =
+  jest.fn<() => Promise<{ hasWarnings?: boolean; warnings?: string } | void>>();
+
+const mockEngine = {
+  checkClientVersion: mockCheckClientVersion,
+  createDatabase: mockCreateDatabase,
+  restoreDatabase: mockRestoreDatabase,
+  getEngineName: jest.fn().mockReturnValue("PostgreSQL"),
+};
 
 jest.unstable_mockModule(
-  "../../../src/infra/engines/postgres/postgres.engine.js",
+  "../../../src/infra/engines/engine-factory.js",
   () => ({
-    PostgresEngine: jest.fn().mockImplementation(() => ({
-      checkClientVersion: mockCheckClientVersion,
-      createDatabase: mockCreateDatabase,
-      restoreDatabase: mockRestoreDatabase,
-      getEngineName: jest.fn().mockReturnValue("PostgreSQL"),
-    })),
+    createEngine: jest.fn().mockReturnValue(mockEngine),
   }),
 );
 
 jest.unstable_mockModule(
-  "../../../src/infra/engines/postgres/resolve-connection.js",
+  "../../../src/infra/engines/resolve-connection.js",
   () => ({
-    resolveConnectionOptions: jest
-      .fn()
-      .mockImplementation(() =>
-        Promise.resolve({ host: "localhost", port: 5432, user: "postgres" }),
-      ),
+    resolveEngineAndConnection: jest.fn().mockImplementation(() =>
+      Promise.resolve({
+        engine: mockEngine,
+        engineType: "postgres",
+        opts: { host: "localhost", port: 5432, user: "postgres" },
+      }),
+    ),
   }),
 );
 
@@ -268,5 +271,18 @@ describe("registerRestoreCommand", () => {
       expect.stringContaining("unexpected string error"),
     );
     expect(processExitSpy).toHaveBeenCalledWith(1);
+  });
+
+  it("fails and exits if checkClientVersion throws", async () => {
+    mockCheckClientVersion.mockRejectedValue(new Error("pg_restore not found"));
+    const { program } = buildFakeProgram();
+    registerRestoreCmd(program as any);
+    await program.invokeAction("dump.sql", { db: "testdb" });
+
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("pg_restore not found"),
+    );
+    expect(processExitSpy).toHaveBeenCalledWith(1);
+    expect(mockRestoreDatabase).not.toHaveBeenCalled();
   });
 });

@@ -193,6 +193,10 @@ export class PostgresEngine implements IDatabaseEngine {
     return "PostgreSQL";
   }
 
+  getDefaultConnectionOptions(): ConnectionOptions {
+    return { host: "localhost", port: "5432", user: "postgres" };
+  }
+
   async checkClientVersion(): Promise<string> {
     return await checkPostgresClient();
   }

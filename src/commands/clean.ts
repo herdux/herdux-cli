@@ -2,10 +2,8 @@ import type { Command } from "commander";
 import chalk from "chalk";
 import ora from "ora";
 import prompts from "prompts";
-import { PostgresEngine } from "../infra/engines/postgres/postgres.engine.js";
+import { resolveEngineAndConnection } from "../infra/engines/resolve-connection.js";
 import * as config from "../infra/config/config.service.js";
-import type { ConnectionOptions } from "../core/interfaces/database-engine.interface.js";
-import { resolveConnectionOptions } from "../infra/engines/postgres/resolve-connection.js";
 import { join } from "path";
 import { homedir } from "os";
 
@@ -15,14 +13,9 @@ export function registerCleanCommand(program: Command): void {
     .description("Interactive bulk cleanup tool to drop multiple databases")
     .action(async () => {
       try {
-        const engine = new PostgresEngine();
-        await engine.checkClientVersion();
-
         const rawOpts = program.opts();
-        const opts = await resolveConnectionOptions(
-          rawOpts as ConnectionOptions,
-          rawOpts.server,
-        );
+        const { engine, opts } = await resolveEngineAndConnection(rawOpts);
+        await engine.checkClientVersion();
 
         let spinner = ora("Fetching databases...").start();
         const databases = await engine.listDatabases(opts);
