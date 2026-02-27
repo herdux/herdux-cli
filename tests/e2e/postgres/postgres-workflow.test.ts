@@ -182,9 +182,9 @@ describe("E2E: PostgreSQL Full Workflow", () => {
     it("should restore the database from .dump backup", async () => {
       const result = await runCli("restore", customBackupPath, "--db", TEST_DB);
 
-      // The CLI should handle the pg_restore exit code 1 gracefully and return 0
+      // The CLI should handle the pg_restore command gracefully and return 0
       expect(result.exitCode).toBe(0);
-      expect(result.output).toMatch(/completed with warnings/i);
+      expect(result.output).toMatch(/restored successfully/i);
     });
 
     it("should confirm the database exists again after restore", async () => {
