@@ -30,6 +30,6 @@ export default {
       moduleNameMapper: { "^(\\.{1,2}/.*)\\.js$": "$1" },
       testMatch: ["<rootDir>/tests/integration/**/*.test.ts"],
       testTimeout: 10_000,
-    }
+    },
   ],
 };
