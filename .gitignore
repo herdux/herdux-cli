@@ -33,9 +33,8 @@ Thumbs.db
 tests/e2e/postgres/backups/
 tests/e2e/postgres/.tmp-home/
 
-# It is being created hourly
-
+# Generated files
+TODO.md
 ROADMAP.md
 VISION.md
-tsc-errors.txt
 PROJECT_RESUME.md
