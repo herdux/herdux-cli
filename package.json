@@ -27,6 +27,7 @@
     "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch --selectProjects unit",
     "test:unit": "node --no-warnings --experimental-vm-modules node_modules/jest/bin/jest.js --selectProjects unit",
     "test:e2e": "node --no-warnings --experimental-vm-modules node_modules/jest/bin/jest.js --selectProjects e2e",
+    "test:integration": "node --no-warnings --experimental-vm-modules node_modules/jest/bin/jest.js --selectProjects integration",
     "test:e2e:pgsql": "node --no-warnings --experimental-vm-modules node_modules/jest/bin/jest.js -- tests/e2e/postgres/",
     "test:e2e:pgsql:up": "docker compose -f infra/docker/compose.e2e-pgsql.yml up -d --wait",
     "test:e2e:pgsql:down": "docker compose -f infra/docker/compose.e2e-pgsql.yml down -v --remove-orphans",
