@@ -46,9 +46,19 @@ export async function resolveEngineAndConnection(
 
   if (!serverName && !rawOpts.port && !rawOpts.host && process.stdout.isTTY) {
     const servers = config.listServers();
-    const serverNames = Object.keys(servers);
+    let serverNames = Object.keys(servers);
 
-    if (serverNames.length > 0) {
+    if (rawOpts.engine) {
+      serverNames = serverNames.filter(
+        (name) => servers[name].engine === rawOpts.engine,
+      );
+    }
+
+    const dEngine = savedDefaults.engine ?? "postgres";
+    const isDefaultCompatible = !rawOpts.engine || dEngine === rawOpts.engine;
+    const hasDefaults = Object.keys(savedDefaults).length > 0;
+
+    if (serverNames.length > 0 || (hasDefaults && isDefaultCompatible)) {
       const choices = serverNames.map((name) => {
         const srv = servers[name];
         const engineLabel = srv.engine ? `, engine: ${srv.engine}` : "";
@@ -58,30 +68,38 @@ export async function resolveEngineAndConnection(
         };
       });
 
-      if (Object.keys(savedDefaults).length > 0) {
-        const defaultEngineLabel = savedDefaults.engine
-          ? `, engine: ${savedDefaults.engine}`
-          : "";
+      if (hasDefaults && isDefaultCompatible) {
+        const defaultEngineLabel = `, engine: ${dEngine}`;
         choices.unshift({
           title: `Default connection (port ${savedDefaults.port ?? "?"}${defaultEngineLabel})`,
           value: "__default__",
         });
       }
 
-      const response = await prompts({
-        type: "select",
-        name: "server",
-        message: "Select a connection to use:",
-        choices,
-      });
+      if (choices.length === 1) {
+        const choice = choices[0];
+        console.log(
+          chalk.green(`✔ Auto-selected connection: › ${choice.title}`),
+        );
+        if (choice.value !== "__default__") {
+          serverName = choice.value;
+        }
+      } else {
+        const response = await prompts({
+          type: "select",
+          name: "server",
+          message: "Select a connection to use:",
+          choices,
+        });
 
-      if (!response.server) {
-        console.log(chalk.yellow("\n⚠ Operation cancelled.\n"));
-        process.exit(0);
-      }
+        if (!response.server) {
+          console.log(chalk.yellow("\n⚠ Operation cancelled.\n"));
+          process.exit(0);
+        }
 
-      if (response.server !== "__default__") {
-        serverName = response.server;
+        if (response.server !== "__default__") {
+          serverName = response.server;
+        }
       }
     }
   }
