@@ -3,8 +3,12 @@ import { jest } from "@jest/globals";
 // We test the real engine-factory — no mocks needed for the factory itself.
 // We only need to verify it returns the correct engine type.
 
-const { createEngine } =
-  await import("../../../src/infra/engines/engine-factory.js");
+let createEngine: typeof import("../../../src/infra/engines/engine-factory.js").createEngine;
+
+beforeAll(async () => {
+  ({ createEngine } =
+    await import("../../../src/infra/engines/engine-factory.js"));
+});
 
 describe("createEngine", () => {
   it('returns a PostgresEngine when called with "postgres"', () => {
