@@ -37,6 +37,9 @@ jobs:
       - name: Run Unit Tests
         run: npm run test:unit
 
+      - name: Run Integration Tests
+        run: npm run test:integration
+
   e2e-postgres:
     name: E2E Tests (PostgreSQL)
     runs-on: ubuntu-latest

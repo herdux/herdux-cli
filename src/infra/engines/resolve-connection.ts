@@ -44,7 +44,10 @@ export async function resolveEngineAndConnection(
 
   // --- Step 1: Resolve server profile (may provide engine) ---
 
-  if (!serverName && !rawOpts.port && !rawOpts.host && process.stdout.isTTY) {
+  const isInteractive =
+    process.stdout.isTTY || process.env.HERDUX_TEST_FORCE_TTY === "1";
+
+  if (!serverName && !rawOpts.port && !rawOpts.host && isInteractive) {
     const servers = config.listServers();
     let serverNames = Object.keys(servers);
 

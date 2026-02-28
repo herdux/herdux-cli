@@ -12,7 +12,7 @@ import type {
   EngineType,
 } from "../../core/interfaces/database-engine.interface.js";
 
-const CONFIG_DIR = join(homedir(), ".herdux");
+const CONFIG_DIR = process.env.HERDUX_CONFIG_DIR || join(homedir(), ".herdux");
 const CONFIG_FILE = join(CONFIG_DIR, "config.json");
 
 export interface ServerProfile extends ConnectionOptions {

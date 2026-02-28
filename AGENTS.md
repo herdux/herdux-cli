@@ -233,6 +233,17 @@ Shortcuts are forbidden.
 
 ---
 
+## BEFORE EVERY COMMIT (THE PRE-COMMIT WORKFLOW)
+
+Before any `git commit`, you **MUST** run through the Gold Standard checklist.
+
+- You can trigger this behavior automatically by reading `/.agents/workflows/pre-commit.md`.
+- Ensure atomicity: one feature/fix per commit.
+- Update `package.json` and `README.md` versions if applicable.
+- Fill out the `.github/PULL_REQUEST_TEMPLATE.md` thoroughly.
+
+---
+
 ## ABSOLUTE PROHIBITIONS
 
 - DO NOT break layer boundaries
