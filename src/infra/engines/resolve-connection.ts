@@ -8,6 +8,7 @@ import type {
   IDatabaseEngine,
 } from "../../core/interfaces/database-engine.interface.js";
 import * as config from "../config/config.service.js";
+import type { ServerProfile } from "../config/config.service.js";
 import { logger } from "../../presentation/logger.js";
 
 // --- Public Types ---
@@ -16,6 +17,91 @@ export interface ResolvedConnection {
   engine: IDatabaseEngine;
   engineType: EngineType;
   opts: ConnectionOptions;
+}
+
+// --- Private Helpers ---
+
+type SavedDefaults = ConnectionOptions & {
+  output?: string;
+  engine?: EngineType;
+};
+
+/**
+ * Presents an interactive prompt for the user to select a server profile.
+ * Returns the selected server name, or undefined if the user selected
+ * the default connection or no options were available.
+ */
+async function promptServerSelection(
+  servers: Record<string, ServerProfile>,
+  serverNames: string[],
+  savedDefaults: SavedDefaults,
+  requestedEngine?: EngineType,
+): Promise<string | undefined> {
+  const dEngine = savedDefaults.engine ?? "postgres";
+  const isDefaultCompatible = !requestedEngine || dEngine === requestedEngine;
+  const hasDefaults = Object.keys(savedDefaults).length > 0;
+
+  if (serverNames.length === 0 && !(hasDefaults && isDefaultCompatible)) {
+    return undefined;
+  }
+
+  const choices = serverNames.map((name) => {
+    const srv = servers[name];
+    const engineLabel = srv.engine ? `, engine: ${srv.engine}` : "";
+    return {
+      title: `${name} (port ${srv.port ?? "?"}${engineLabel})`,
+      value: name,
+    };
+  });
+
+  if (hasDefaults && isDefaultCompatible) {
+    const defaultEngineLabel = `, engine: ${dEngine}`;
+    choices.unshift({
+      title: `Default connection (port ${savedDefaults.port ?? "?"}${defaultEngineLabel})`,
+      value: "__default__",
+    });
+  }
+
+  if (choices.length === 0) {
+    return undefined;
+  }
+
+  if (choices.length === 1) {
+    const choice = choices[0];
+    console.log(chalk.green(`✔ Auto-selected connection: › ${choice.title}`));
+    return choice.value !== "__default__" ? choice.value : undefined;
+  }
+
+  const response = await prompts({
+    type: "select",
+    name: "server",
+    message: "Select a connection to use:",
+    choices,
+  });
+
+  if (!response.server) {
+    console.log(chalk.yellow("\n⚠ Operation cancelled.\n"));
+    process.exit(0);
+  }
+
+  return response.server !== "__default__" ? response.server : undefined;
+}
+
+/**
+ * Determines the engine type from the CLI flag, server profile, or config defaults.
+ * Priority: CLI flag > server profile engine > config default engine > "postgres"
+ */
+function resolveEngineType(
+  rawEngine: EngineType | undefined,
+  serverName: string | undefined,
+  savedDefaults: SavedDefaults,
+): EngineType {
+  if (rawEngine) return rawEngine;
+  if (serverName) {
+    const profile = config.getServer(serverName);
+    return profile?.engine ?? savedDefaults.engine ?? "postgres";
+  }
+  return savedDefaults.engine ?? "postgres";
 }
 
 // --- Main Resolver ---
@@ -40,7 +126,6 @@ export async function resolveEngineAndConnection(
 ): Promise<ResolvedConnection> {
   const savedDefaults = config.getDefault();
   let serverName = rawOpts.server;
-  let profileEngine: EngineType | undefined;
 
   // --- Step 1: Resolve server profile (may provide engine) ---
 
@@ -57,71 +142,25 @@ export async function resolveEngineAndConnection(
       );
     }
 
-    const dEngine = savedDefaults.engine ?? "postgres";
-    const isDefaultCompatible = !rawOpts.engine || dEngine === rawOpts.engine;
-    const hasDefaults = Object.keys(savedDefaults).length > 0;
+    const selected = await promptServerSelection(
+      servers,
+      serverNames,
+      savedDefaults,
+      rawOpts.engine,
+    );
 
-    if (serverNames.length > 0 || (hasDefaults && isDefaultCompatible)) {
-      const choices = serverNames.map((name) => {
-        const srv = servers[name];
-        const engineLabel = srv.engine ? `, engine: ${srv.engine}` : "";
-        return {
-          title: `${name} (port ${srv.port ?? "?"}${engineLabel})`,
-          value: name,
-        };
-      });
-
-      if (hasDefaults && isDefaultCompatible) {
-        const defaultEngineLabel = `, engine: ${dEngine}`;
-        choices.unshift({
-          title: `Default connection (port ${savedDefaults.port ?? "?"}${defaultEngineLabel})`,
-          value: "__default__",
-        });
-      }
-
-      if (choices.length === 1) {
-        const choice = choices[0];
-        console.log(
-          chalk.green(`✔ Auto-selected connection: › ${choice.title}`),
-        );
-        if (choice.value !== "__default__") {
-          serverName = choice.value;
-        }
-      } else {
-        const response = await prompts({
-          type: "select",
-          name: "server",
-          message: "Select a connection to use:",
-          choices,
-        });
-
-        if (!response.server) {
-          console.log(chalk.yellow("\n⚠ Operation cancelled.\n"));
-          process.exit(0);
-        }
-
-        if (response.server !== "__default__") {
-          serverName = response.server;
-        }
-      }
+    if (selected !== undefined) {
+      serverName = selected;
     }
   }
 
   // --- Step 2: Determine engine type ---
 
-  // Priority: CLI flag > profile engine > config default engine > "postgres"
-  let engineType: EngineType;
-
-  if (rawOpts.engine) {
-    engineType = rawOpts.engine;
-  } else if (serverName) {
-    const profile = config.getServer(serverName);
-    profileEngine = profile?.engine;
-    engineType = profileEngine ?? savedDefaults.engine ?? "postgres";
-  } else {
-    engineType = savedDefaults.engine ?? "postgres";
-  }
-
+  const engineType = resolveEngineType(
+    rawOpts.engine,
+    serverName,
+    savedDefaults,
+  );
   const engine = createEngine(engineType);
 
   // --- Step 3: Resolve connection options ---

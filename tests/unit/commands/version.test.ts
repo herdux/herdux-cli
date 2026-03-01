@@ -1,6 +1,23 @@
 import { jest } from "@jest/globals";
 import type { DatabaseInstance } from "../../../src/core/interfaces/database-engine.interface.js";
 
+// --- Engine parametrize config ---
+
+const engines = [
+  {
+    engineType: "postgres" as const,
+    engineName: "PostgreSQL",
+    defaultOpts: { host: "localhost", port: "5432", user: "postgres" },
+    clientVersionStr: "psql (PostgreSQL) 15.0",
+  },
+  {
+    engineType: "mysql" as const,
+    engineName: "MySQL",
+    defaultOpts: { host: "localhost", port: "3306", user: "root" },
+    clientVersionStr: "mysql  Ver 8.0.33 Distrib 8.0.33, for Linux (x86_64)",
+  },
+];
+
 // --- Mocks ---
 
 const mockCheckClientVersion = jest.fn<() => Promise<string>>();
@@ -9,7 +26,7 @@ const mockDiscoverInstances = jest.fn<() => Promise<DatabaseInstance[]>>();
 const mockEngine = {
   checkClientVersion: mockCheckClientVersion,
   discoverInstances: mockDiscoverInstances,
-  getEngineName: jest.fn().mockReturnValue("PostgreSQL"),
+  getEngineName: jest.fn<() => string>(),
 };
 
 jest.unstable_mockModule(
@@ -19,16 +36,12 @@ jest.unstable_mockModule(
   }),
 );
 
+const mockResolveEngineAndConnection = jest.fn<() => Promise<any>>();
+
 jest.unstable_mockModule(
   "../../../src/infra/engines/resolve-connection.js",
   () => ({
-    resolveEngineAndConnection: jest.fn().mockImplementation(() =>
-      Promise.resolve({
-        engine: mockEngine,
-        engineType: "postgres",
-        opts: { host: "localhost", port: 5432, user: "postgres" },
-      }),
-    ),
+    resolveEngineAndConnection: mockResolveEngineAndConnection,
   }),
 );
 
@@ -107,104 +120,119 @@ function buildFakeProgram() {
 
 // --- Tests ---
 
-describe("registerVersionCommand", () => {
-  const consoleLogSpy = jest.spyOn(console, "log").mockImplementation(() => {});
-  const consoleErrorSpy = jest
-    .spyOn(console, "error")
-    .mockImplementation(() => {});
-  const processExitSpy = jest.spyOn(process, "exit").mockImplementation(() => {
-    throw new Error("PROCESS_EXIT_MOCK");
-  });
+describe.each(engines)(
+  "registerVersionCommand ($engineName)",
+  ({ engineType, engineName, defaultOpts, clientVersionStr }) => {
+    let consoleLogSpy: ReturnType<typeof jest.spyOn>;
+    let consoleErrorSpy: ReturnType<typeof jest.spyOn>;
+    let processExitSpy: ReturnType<typeof jest.spyOn>;
 
-  beforeEach(() => {
-    jest.clearAllMocks();
-    mockCheckClientVersion.mockResolvedValue("psql (PostgreSQL) 15.0");
-    mockDiscoverInstances.mockResolvedValue([
-      { port: "5432", version: "PostgreSQL 15.0", status: "running" },
-    ]);
-  });
+    beforeAll(() => {
+      consoleLogSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+      consoleErrorSpy = jest
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+      processExitSpy = jest.spyOn(process, "exit").mockImplementation(() => {
+        throw new Error("PROCESS_EXIT_MOCK");
+      });
+    });
 
-  afterAll(() => {
-    consoleLogSpy.mockRestore();
-    consoleErrorSpy.mockRestore();
-    processExitSpy.mockRestore();
-  });
+    beforeEach(() => {
+      jest.clearAllMocks();
+      mockEngine.getEngineName.mockReturnValue(engineName);
+      mockResolveEngineAndConnection.mockResolvedValue({
+        engine: mockEngine,
+        engineType,
+        opts: defaultOpts,
+      });
+      mockCheckClientVersion.mockResolvedValue(clientVersionStr);
+      mockDiscoverInstances.mockResolvedValue([
+        { port: "5432", version: `${engineName} 15.0`, status: "running" },
+      ]);
+    });
 
-  it("registers a 'version' command on the program", () => {
-    const { program, getCapturedCommandName } = buildFakeProgram();
-    registerVersionCmd(program as any);
-    expect(getCapturedCommandName()).toBe("version");
-  });
+    afterAll(() => {
+      consoleLogSpy.mockRestore();
+      consoleErrorSpy.mockRestore();
+      processExitSpy.mockRestore();
+    });
 
-  it("prints client version and lists running instances", async () => {
-    mockDiscoverInstances.mockResolvedValue([
-      { port: "5432", version: "15.4", status: "running" },
-      { port: "5433", version: "14.8", status: "running" },
-    ]);
+    it("registers a 'version' command on the program", () => {
+      const { program, getCapturedCommandName } = buildFakeProgram();
+      registerVersionCmd(program as any);
+      expect(getCapturedCommandName()).toBe("version");
+    });
 
-    const { program } = buildFakeProgram();
-    registerVersionCmd(program as any);
-    await program.invokeAction();
+    it("prints client version and lists running instances", async () => {
+      mockDiscoverInstances.mockResolvedValue([
+        { port: "5432", version: "15.4", status: "running" },
+        { port: "5433", version: "14.8", status: "running" },
+      ]);
 
-    expect(mockCheckClientVersion).toHaveBeenCalled();
-    expect(mockDiscoverInstances).toHaveBeenCalled();
-    expect(consoleLogSpy).toHaveBeenCalledWith(
-      expect.stringContaining("psql (PostgreSQL) 15.0"),
-    );
-    // Verify both ports are rendered — not just the first one
-    expect(consoleLogSpy).toHaveBeenCalledWith(
-      expect.stringContaining(":5432"),
-    );
-    expect(consoleLogSpy).toHaveBeenCalledWith(
-      expect.stringContaining(":5433"),
-    );
-    // Explicitly assert count matches mocked instances — guards against beforeEach default of 1 leaking in
-    expect(mockSpinnerSucceed).toHaveBeenCalledWith(
-      expect.stringContaining("Found 2 running server(s)"),
-    );
-    expect(mockSpinnerSucceed).not.toHaveBeenCalledWith(
-      expect.stringContaining("Found 1 running server(s)"),
-    );
-  });
+      const { program } = buildFakeProgram();
+      registerVersionCmd(program as any);
+      await program.invokeAction();
 
-  it("displays warning when no instances are discovered", async () => {
-    mockDiscoverInstances.mockResolvedValue([]);
+      expect(mockCheckClientVersion).toHaveBeenCalled();
+      expect(mockDiscoverInstances).toHaveBeenCalled();
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining(clientVersionStr),
+      );
+      // Verify both ports are rendered — not just the first one
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining(":5432"),
+      );
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining(":5433"),
+      );
+      // Explicitly assert count matches mocked instances — guards against beforeEach default of 1 leaking in
+      expect(mockSpinnerSucceed).toHaveBeenCalledWith(
+        expect.stringContaining("Found 2 running server(s)"),
+      );
+      expect(mockSpinnerSucceed).not.toHaveBeenCalledWith(
+        expect.stringContaining("Found 1 running server(s)"),
+      );
+    });
 
-    const { program } = buildFakeProgram();
-    registerVersionCmd(program as any);
-    await program.invokeAction();
+    it("displays warning when no instances are discovered", async () => {
+      mockDiscoverInstances.mockResolvedValue([]);
 
-    expect(mockSpinnerWarn).toHaveBeenCalledWith(
-      expect.stringContaining("No running PostgreSQL servers found"),
-    );
-    expect(consoleLogSpy).toHaveBeenCalledWith(
-      expect.stringContaining("No servers detected on common ports"),
-    );
-  });
+      const { program } = buildFakeProgram();
+      registerVersionCmd(program as any);
+      await program.invokeAction();
 
-  it("catches Error exceptions gracefully and exits", async () => {
-    mockCheckClientVersion.mockRejectedValue(new Error("Engine fault"));
+      expect(mockSpinnerWarn).toHaveBeenCalledWith(
+        expect.stringContaining(`No running ${engineName} servers found`),
+      );
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining("No servers detected on common ports"),
+      );
+    });
 
-    const { program } = buildFakeProgram();
-    registerVersionCmd(program as any);
-    await program.invokeAction();
+    it("catches Error exceptions gracefully and exits", async () => {
+      mockCheckClientVersion.mockRejectedValue(new Error("Engine fault"));
 
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      expect.stringContaining("Engine fault"),
-    );
-    expect(processExitSpy).toHaveBeenCalledWith(1);
-  });
+      const { program } = buildFakeProgram();
+      registerVersionCmd(program as any);
+      await program.invokeAction();
 
-  it("handles non-Error exceptions gracefully and exits", async () => {
-    mockCheckClientVersion.mockRejectedValue("unexpected string error");
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Engine fault"),
+      );
+      expect(processExitSpy).toHaveBeenCalledWith(1);
+    });
 
-    const { program } = buildFakeProgram();
-    registerVersionCmd(program as any);
-    await program.invokeAction();
+    it("handles non-Error exceptions gracefully and exits", async () => {
+      mockCheckClientVersion.mockRejectedValue("unexpected string error");
 
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      expect.stringContaining("unexpected string error"),
-    );
-    expect(processExitSpy).toHaveBeenCalledWith(1);
-  });
-});
+      const { program } = buildFakeProgram();
+      registerVersionCmd(program as any);
+      await program.invokeAction();
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("unexpected string error"),
+      );
+      expect(processExitSpy).toHaveBeenCalledWith(1);
+    });
+  },
+);

@@ -1,5 +1,20 @@
 import { jest } from "@jest/globals";
 
+// --- Engine parametrize config ---
+
+const engines = [
+  {
+    engineType: "postgres" as const,
+    engineName: "PostgreSQL",
+    defaultOpts: { host: "localhost", port: "5432", user: "postgres" },
+  },
+  {
+    engineType: "mysql" as const,
+    engineName: "MySQL",
+    defaultOpts: { host: "localhost", port: "3306", user: "root" },
+  },
+];
+
 // --- Mocks ---
 
 const mockCheckClientVersion = jest.fn<() => Promise<void>>();
@@ -12,7 +27,7 @@ const mockEngine = {
   checkBackupRequirements: mockCheckBackupRequirements,
   backupDatabase: mockBackupDatabase,
   dropDatabase: mockDropDatabase,
-  getEngineName: jest.fn().mockReturnValue("PostgreSQL"),
+  getEngineName: jest.fn<() => string>(),
 };
 
 jest.unstable_mockModule(
@@ -22,16 +37,12 @@ jest.unstable_mockModule(
   }),
 );
 
+const mockResolveEngineAndConnection = jest.fn<() => Promise<any>>();
+
 jest.unstable_mockModule(
   "../../../src/infra/engines/resolve-connection.js",
   () => ({
-    resolveEngineAndConnection: jest.fn().mockImplementation(() =>
-      Promise.resolve({
-        engine: mockEngine,
-        engineType: "postgres",
-        opts: { host: "localhost", port: 5432, user: "postgres" },
-      }),
-    ),
+    resolveEngineAndConnection: mockResolveEngineAndConnection,
   }),
 );
 
@@ -128,162 +139,183 @@ function buildFakeProgram(programOpts: Record<string, unknown> = {}) {
 
 // --- Tests ---
 
-describe("registerBackupCommand", () => {
-  const consoleLogSpy = jest.spyOn(console, "log").mockImplementation(() => {});
-  const consoleErrorSpy = jest
-    .spyOn(console, "error")
-    .mockImplementation(() => {});
-  const processExitSpy = jest.spyOn(process, "exit").mockImplementation(() => {
-    throw new Error("PROCESS_EXIT_MOCK");
-  });
+describe.each(engines)(
+  "registerBackupCommand ($engineName)",
+  ({ engineType, engineName, defaultOpts }) => {
+    let consoleLogSpy: ReturnType<typeof jest.spyOn>;
+    let consoleErrorSpy: ReturnType<typeof jest.spyOn>;
+    let processExitSpy: ReturnType<typeof jest.spyOn>;
 
-  beforeEach(() => {
-    jest.clearAllMocks();
-    mockCheckClientVersion.mockResolvedValue(undefined);
-    mockCheckBackupRequirements.mockResolvedValue(undefined);
-    mockBackupDatabase.mockResolvedValue("/output/path/backup.dump");
-    mockDropDatabase.mockResolvedValue(undefined);
-    // Safe default: if a test triggers prompts without configuring the mock,
-    // it returns { confirmDrop: false } instead of undefined — prevents silent failures.
-    mockPromptsConfirm.mockResolvedValue({ confirmDrop: false });
-  });
-
-  afterAll(() => {
-    consoleLogSpy.mockRestore();
-    consoleErrorSpy.mockRestore();
-    processExitSpy.mockRestore();
-  });
-
-  it("registers a 'backup <database>' command on the program", () => {
-    const { program, getCapturedCommandName } = buildFakeProgram();
-    registerBackupCmd(program as any);
-    expect(getCapturedCommandName()).toBe("backup <database>");
-  });
-
-  it("successfully generates a backup using default config output dir", async () => {
-    const { program } = buildFakeProgram();
-    registerBackupCmd(program as any);
-    await program.invokeAction("testdb", { format: "custom" });
-
-    expect(mockBackupDatabase).toHaveBeenLastCalledWith(
-      "testdb",
-      "/default/backup/dir",
-      expect.any(Object),
-      "custom",
-    );
-    expect(mockSpinnerSucceed).toHaveBeenLastCalledWith(
-      "Backup saved at /output/path/backup.dump\n",
-    );
-  });
-
-  it("overrides output directory when --output flag is provided", async () => {
-    const { program } = buildFakeProgram();
-    registerBackupCmd(program as any);
-    await program.invokeAction("testdb", {
-      format: "plain",
-      output: "/custom/path",
+    beforeAll(() => {
+      consoleLogSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+      consoleErrorSpy = jest
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+      processExitSpy = jest.spyOn(process, "exit").mockImplementation(() => {
+        throw new Error("PROCESS_EXIT_MOCK");
+      });
     });
 
-    expect(mockBackupDatabase).toHaveBeenCalledWith(
-      "testdb",
-      "/custom/path",
-      expect.any(Object),
-      "plain",
-    );
-  });
-
-  it("fails and exits if an invalid format is provided", async () => {
-    const { program } = buildFakeProgram();
-    registerBackupCmd(program as any);
-    await program.invokeAction("testdb", { format: "invalid-format" });
-
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Invalid format "invalid-format"'),
-    );
-    expect(processExitSpy).toHaveBeenCalledWith(1);
-    expect(mockBackupDatabase).not.toHaveBeenCalled();
-  });
-
-  it("Drops database if --drop and --yes are provided", async () => {
-    const { program } = buildFakeProgram();
-    registerBackupCmd(program as any);
-    await program.invokeAction("testdb", {
-      format: "custom",
-      drop: true,
-      yes: true,
+    beforeEach(() => {
+      jest.clearAllMocks();
+      mockEngine.getEngineName.mockReturnValue(engineName);
+      mockResolveEngineAndConnection.mockResolvedValue({
+        engine: mockEngine,
+        engineType,
+        opts: defaultOpts,
+      });
+      mockCheckClientVersion.mockResolvedValue(undefined);
+      mockCheckBackupRequirements.mockResolvedValue(undefined);
+      mockBackupDatabase.mockResolvedValue("/output/path/backup.dump");
+      mockDropDatabase.mockResolvedValue(undefined);
+      // Safe default: if a test triggers prompts without configuring the mock,
+      // it returns { confirmDrop: false } instead of undefined — prevents silent failures.
+      mockPromptsConfirm.mockResolvedValue({ confirmDrop: false });
     });
 
-    expect(mockDropDatabase).toHaveBeenCalledWith("testdb", expect.any(Object));
-    expect(mockSpinnerSucceed).toHaveBeenLastCalledWith(
-      'Database "testdb" dropped successfully\n',
-    );
-  });
+    afterAll(() => {
+      consoleLogSpy.mockRestore();
+      consoleErrorSpy.mockRestore();
+      processExitSpy.mockRestore();
+    });
 
-  it("Prompts to drop and executes if confirmed when --drop provided without --yes", async () => {
-    mockPromptsConfirm.mockResolvedValue({ confirmDrop: true });
-    const { program } = buildFakeProgram();
-    registerBackupCmd(program as any);
-    await program.invokeAction("testdb", { format: "custom", drop: true });
+    it("registers a 'backup <database>' command on the program", () => {
+      const { program, getCapturedCommandName } = buildFakeProgram();
+      registerBackupCmd(program as any);
+      expect(getCapturedCommandName()).toBe("backup <database>");
+    });
 
-    expect(mockPromptsConfirm).toHaveBeenCalledTimes(1);
-    expect(mockDropDatabase).toHaveBeenCalledWith("testdb", expect.any(Object));
-  });
+    it("successfully generates a backup using default config output dir", async () => {
+      const { program } = buildFakeProgram();
+      registerBackupCmd(program as any);
+      await program.invokeAction("testdb", { format: "custom" });
 
-  it("Prompts to drop and skips if not confirmed when --drop provided without --yes", async () => {
-    // Default from beforeEach already covers this case (confirmDrop: false),
-    // but kept explicit here for readability and test intent clarity.
-    mockPromptsConfirm.mockResolvedValue({ confirmDrop: false });
-    const { program } = buildFakeProgram();
-    registerBackupCmd(program as any);
-    await program.invokeAction("testdb", { format: "custom", drop: true });
+      expect(mockBackupDatabase).toHaveBeenLastCalledWith(
+        "testdb",
+        "/default/backup/dir",
+        expect.any(Object),
+        "custom",
+      );
+      expect(mockSpinnerSucceed).toHaveBeenLastCalledWith(
+        "Backup saved at /output/path/backup.dump\n",
+      );
+    });
 
-    expect(mockPromptsConfirm).toHaveBeenCalledTimes(1);
-    expect(mockDropDatabase).not.toHaveBeenCalled();
-    expect(consoleLogSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Skipped dropping database "testdb".'),
-    );
-  });
+    it("overrides output directory when --output flag is provided", async () => {
+      const { program } = buildFakeProgram();
+      registerBackupCmd(program as any);
+      await program.invokeAction("testdb", {
+        format: "plain",
+        output: "/custom/path",
+      });
 
-  it("catches internal engine errors gracefully", async () => {
-    mockBackupDatabase.mockRejectedValue(new Error("Disk full"));
+      expect(mockBackupDatabase).toHaveBeenCalledWith(
+        "testdb",
+        "/custom/path",
+        expect.any(Object),
+        "plain",
+      );
+    });
 
-    const { program } = buildFakeProgram();
-    registerBackupCmd(program as any);
-    await program.invokeAction("testdb", { format: "custom" });
+    it("fails and exits if an invalid format is provided", async () => {
+      const { program } = buildFakeProgram();
+      registerBackupCmd(program as any);
+      await program.invokeAction("testdb", { format: "invalid-format" });
 
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      expect.stringContaining("Disk full"),
-    );
-    expect(processExitSpy).toHaveBeenCalledWith(1);
-  });
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Invalid format "invalid-format"'),
+      );
+      expect(processExitSpy).toHaveBeenCalledWith(1);
+      expect(mockBackupDatabase).not.toHaveBeenCalled();
+    });
 
-  it("fails and exits if checkClientVersion throws", async () => {
-    mockCheckClientVersion.mockRejectedValue(new Error("pg_dump not found"));
-    const { program } = buildFakeProgram();
-    registerBackupCmd(program as any);
-    await program.invokeAction("testdb", { format: "custom" });
+    it("Drops database if --drop and --yes are provided", async () => {
+      const { program } = buildFakeProgram();
+      registerBackupCmd(program as any);
+      await program.invokeAction("testdb", {
+        format: "custom",
+        drop: true,
+        yes: true,
+      });
 
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      expect.stringContaining("pg_dump not found"),
-    );
-    expect(processExitSpy).toHaveBeenCalledWith(1);
-    expect(mockBackupDatabase).not.toHaveBeenCalled();
-  });
+      expect(mockDropDatabase).toHaveBeenCalledWith(
+        "testdb",
+        expect.any(Object),
+      );
+      expect(mockSpinnerSucceed).toHaveBeenLastCalledWith(
+        'Database "testdb" dropped successfully\n',
+      );
+    });
 
-  it("successfully generates a backup in plain format", async () => {
-    mockBackupDatabase.mockResolvedValue("/output/path/backup.sql");
-    const { program } = buildFakeProgram();
-    registerBackupCmd(program as any);
-    await program.invokeAction("testdb", { format: "plain" });
+    it("Prompts to drop and executes if confirmed when --drop provided without --yes", async () => {
+      mockPromptsConfirm.mockResolvedValue({ confirmDrop: true });
+      const { program } = buildFakeProgram();
+      registerBackupCmd(program as any);
+      await program.invokeAction("testdb", { format: "custom", drop: true });
 
-    expect(mockBackupDatabase).toHaveBeenCalledWith(
-      "testdb",
-      "/default/backup/dir",
-      expect.any(Object),
-      "plain",
-    );
-    expect(mockSpinnerSucceed).toHaveBeenLastCalledWith(
-      "Backup saved at /output/path/backup.sql\n",
-    );
-  });
-});
+      expect(mockPromptsConfirm).toHaveBeenCalledTimes(1);
+      expect(mockDropDatabase).toHaveBeenCalledWith(
+        "testdb",
+        expect.any(Object),
+      );
+    });
+
+    it("Prompts to drop and skips if not confirmed when --drop provided without --yes", async () => {
+      mockPromptsConfirm.mockResolvedValue({ confirmDrop: false });
+      const { program } = buildFakeProgram();
+      registerBackupCmd(program as any);
+      await program.invokeAction("testdb", { format: "custom", drop: true });
+
+      expect(mockPromptsConfirm).toHaveBeenCalledTimes(1);
+      expect(mockDropDatabase).not.toHaveBeenCalled();
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Skipped dropping database "testdb".'),
+      );
+    });
+
+    it("catches internal engine errors gracefully", async () => {
+      mockBackupDatabase.mockRejectedValue(new Error("Disk full"));
+
+      const { program } = buildFakeProgram();
+      registerBackupCmd(program as any);
+      await program.invokeAction("testdb", { format: "custom" });
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Disk full"),
+      );
+      expect(processExitSpy).toHaveBeenCalledWith(1);
+    });
+
+    it("fails and exits if checkClientVersion throws", async () => {
+      mockCheckClientVersion.mockRejectedValue(
+        new Error("dump tool not found"),
+      );
+      const { program } = buildFakeProgram();
+      registerBackupCmd(program as any);
+      await program.invokeAction("testdb", { format: "custom" });
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("dump tool not found"),
+      );
+      expect(processExitSpy).toHaveBeenCalledWith(1);
+      expect(mockBackupDatabase).not.toHaveBeenCalled();
+    });
+
+    it("successfully generates a backup in plain format", async () => {
+      mockBackupDatabase.mockResolvedValue("/output/path/backup.sql");
+      const { program } = buildFakeProgram();
+      registerBackupCmd(program as any);
+      await program.invokeAction("testdb", { format: "plain" });
+
+      expect(mockBackupDatabase).toHaveBeenCalledWith(
+        "testdb",
+        "/default/backup/dir",
+        expect.any(Object),
+        "plain",
+      );
+      expect(mockSpinnerSucceed).toHaveBeenLastCalledWith(
+        "Backup saved at /output/path/backup.sql\n",
+      );
+    });
+  },
+);
