@@ -1,22 +1,6 @@
 import { jest } from "@jest/globals";
 import type { DatabaseInstance } from "../../../src/core/interfaces/database-engine.interface.js";
-
-// --- Engine parametrize config ---
-
-const engines = [
-  {
-    engineType: "postgres" as const,
-    engineName: "PostgreSQL",
-    defaultOpts: { host: "localhost", port: "5432", user: "postgres" },
-    clientVersionStr: "psql (PostgreSQL) 15.0",
-  },
-  {
-    engineType: "mysql" as const,
-    engineName: "MySQL",
-    defaultOpts: { host: "localhost", port: "3306", user: "root" },
-    clientVersionStr: "mysql  Ver 8.0.33 Distrib 8.0.33, for Linux (x86_64)",
-  },
-];
+import { engines } from "../helpers/engines.js";
 
 // --- Mocks ---
 
