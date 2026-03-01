@@ -1,35 +1,61 @@
-## 📌 PR Description
+## Type
 
-Please provide a detailed description of what this Pull Request addresses. (e.g., "Adds preliminary support for the `--dry-run` flag to the `clean` command")
+<!-- Mark exactly ONE type below -->
 
-Is this a bug fix, a new feature, or a refactoring?
-
-**Related issues:** Closes # (Issue Number), Resolves #
-
----
-
-## 🏗️ How to Test
-
-Please list the steps required to validate this change locally:
-
-1. ...
-2. ...
+- [ ] `feat` — new feature or command
+- [ ] `fix` — bug fix
+- [ ] `refactor` — internal restructuring, no behavior change
+- [ ] `test` — adding or improving tests only
+- [ ] `chore` — tooling, config, scripts, docs, assets
 
 ---
 
-## ✅ Quality Checklist
+## Description
 
-Before opening this PR, please check all that apply:
+<!-- What does this PR do? Why was it needed? Be direct. -->
 
-- [ ] My code follows the architecture and contribution guidelines (`CONTRIBUTING.md` and `AGENTS.md`).
-- [ ] The implemented command is _Engine Agnostic_ (database logic resides inside `src/infra/`).
-- [ ] I ran `npm run lint:fix` and my code uses the standard formatting.
-- [ ] I ran and passed all local Unit Tests for my engine.
-- [ ] I successfully ran the **End-to-End Tests** via Docker (e.g., `npm run test:e2e:pgsql` / `mysql`).
-- [ ] I updated the README or command instructions (if I added/modified flags or behavior).
+**Related issues:** Closes # <!-- or "N/A" -->
 
 ---
 
-## 📸 Screenshots (Optional)
+## Changes
 
-If there are any visual changes involving prompts or menus, please attach before/after screenshots here.
+<!-- Bullet list of what changed and where -->
+
+- ***
+
+## How to Test
+
+<!-- Steps to validate this change locally. Mark N/A if no code was changed. -->
+
+1.
+
+---
+
+## Quality Checklist
+
+**Always required:**
+
+- [ ] Follows architecture and layer rules (`AGENTS.md`)
+- [ ] Formatted with `npm run lint:fix`
+- [ ] Branch is off `master`, not a direct commit to it
+
+**Required for `feat` / `fix` / `refactor`:**
+
+- [ ] Commands remain engine-agnostic (no `psql`, `mysql`, or binary names in `src/commands/`)
+- [ ] Unit tests pass: `npm run test:unit`
+- [ ] Integration tests pass: `npm run test:integration`
+
+**Required if engines or commands were changed:**
+
+- [ ] E2E tests pass for the affected engine(s): `npm run test:e2e:pgsql` / `test:e2e:mysql`
+
+**Required if user-facing behavior changed:**
+
+- [ ] `README.md` and `README.pt-BR.md` updated accordingly
+
+---
+
+## Screenshots
+
+<!-- Only if there are visible changes to CLI output or prompts. Delete this section otherwise. -->
