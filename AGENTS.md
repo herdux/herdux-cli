@@ -1,10 +1,22 @@
 # AGENTS.md — Herdux CLI
 
-This file defines **mandatory rules** for AI agents and automated tools working in this repository.  
+This file defines **mandatory rules** for AI agents and automated tools working in this repository.
 Violating these rules is considered a bug.
 
-Herdux is a deterministic, engine-agnostic CLI.  
+Herdux is a deterministic, engine-agnostic CLI.
 Clarity, separation of concerns, and explicit behavior are non-negotiable.
+
+---
+
+## QUICK REFERENCE
+
+| Task                      | Workflow                           |
+| ------------------------- | ---------------------------------- |
+| Add a new database engine | `.agents/workflows/new-engine.md`  |
+| Add a new CLI command     | `.agents/workflows/new-command.md` |
+| Refactor existing code    | `.agents/workflows/refactoring.md` |
+| Write or review tests     | `.agents/workflows/testing.md`     |
+| Commit and open a PR      | `.agents/workflows/pre-commit.md`  |
 
 ---
 
@@ -20,15 +32,17 @@ Clarity, separation of concerns, and explicit behavior are non-negotiable.
 
 ## ARCHITECTURE OVERVIEW (MANDATORY)
 
-Herdux follows a strict layered architecture.  
+Herdux follows a strict layered architecture.
 **Layer boundaries MUST NOT be violated.**
 
+```
 src/
-├── index.ts # CLI entrypoint (flags & command registration)
-├── commands/ # WHAT to do (engine-agnostic verbs)
-├── core/ # Pure contracts (interfaces only)
-├── infra/ # HOW to do it (engines, config, binaries)
-└── presentation/ # HOW to display (logging & output)
+├── index.ts        # CLI entrypoint (flags & command registration)
+├── commands/       # WHAT to do (engine-agnostic verbs)
+├── core/           # Pure contracts (interfaces only)
+├── infra/          # HOW to do it (engines, config, binaries)
+└── presentation/   # HOW to display (logging & output)
+```
 
 ---
 
@@ -94,15 +108,27 @@ Commands decide _what_, never _how_.
 
 Example: `hdx --engine mysql list`
 
+```
 index.ts
 └── commands/list.ts
-└── engine-factory.ts → createEngine("mysql")
-└── resolve-connection.ts
-└── mysql.engine.ts
-└── command-runner.ts (execa wrapper)
+    └── resolveEngineAndConnection()   # resolve-connection.ts
+        └── engine-factory.ts → createEngine("mysql")
+    └── mysql.engine.ts
+        └── command-runner.ts          # execa wrapper
+```
 
-This flow is **canonical**.  
-Do not invent alternatives.
+This flow is **canonical**. Do not invent alternatives.
+
+---
+
+## SUPPORTED ENGINES
+
+| Engine     | EngineType   | Default Port | Required Binaries               | Backup Formats                   |
+| ---------- | ------------ | ------------ | ------------------------------- | -------------------------------- |
+| PostgreSQL | `"postgres"` | 5432         | `psql`, `pg_dump`, `pg_restore` | custom (`.dump`), plain (`.sql`) |
+| MySQL      | `"mysql"`    | 3306         | `mysql`, `mysqldump`            | plain (`.sql`)                   |
+
+To add a new engine, follow `.agents/workflows/new-engine.md`.
 
 ---
 
@@ -128,7 +154,7 @@ Do not invent alternatives.
   - timeouts
   - env
   - stdin (used for restore)
-  - return shape
+  - return shape: `{ stdout, stderr, exitCode }`
 
 Rules:
 
@@ -144,16 +170,17 @@ Rules:
 
 Order of precedence:
 
-1. Explicit CLI flags
-2. Saved server profiles
-3. Auto-discovery (last resort)
+1. Explicit CLI flags (`--host`, `--port`, `--user`, `--password`)
+2. Saved server profiles (`-s <name>`)
+3. Config defaults (`hdx config set`)
+4. Auto-discovery (port scanning — last resort)
 
 Rules:
 
 - **NEVER** duplicate connection logic
-- **NEVER** assume host or port defaults
+- **NEVER** assume host or port defaults in commands
 - **NEVER** skip resolution
-- In tests (`NODE_ENV=test`), prompts are disabled
+- In tests, set `HERDUX_TEST_FORCE_TTY=1` to simulate TTY without a real terminal
 
 ---
 
@@ -174,28 +201,21 @@ Rules:
 
 ## TESTING RULES
 
-### Unit Tests
+Herdux uses a three-tier strategy: **unit → integration → E2E**.
 
-- Test commands and infra in isolation
-- Use mocks and fakes
-- No real databases
+| Tier             | Command                    | Requires Docker? |
+| ---------------- | -------------------------- | ---------------- |
+| Unit             | `npm run test:unit`        | No               |
+| Integration      | `npm run test:integration` | No               |
+| E2E (PostgreSQL) | `npm run test:e2e:pgsql`   | Yes              |
+| E2E (MySQL)      | `npm run test:e2e:mysql`   | Yes              |
 
-Notes:
-
-- Unit tests currently focus on PostgreSQL behavior
-- When adding MySQL-specific logic, tests **MUST** be extended accordingly
-
----
+For patterns, mocking conventions, and detailed standards, read `.agents/workflows/testing.md`.
 
 ### E2E Tests (SOURCE OF TRUTH)
 
 - Run against real databases via Docker
-- One full workflow per DBMS
-- Validate:
-  commands → engine-factory → engine → binaries
-
-Rules:
-
+- One full workflow per DBMS: `create → list → backup → drop → restore`
 - **ALWAYS** run E2E tests when changing commands or engines
 - **NEVER** assume unit tests are sufficient
 - If E2E fails, the code is wrong
@@ -218,18 +238,31 @@ Rules:
 
 ---
 
-## ADDING A NEW COMMAND (MANDATORY CHECKLIST)
+## ADDING A NEW COMMAND
 
-When adding a new CLI command:
+Follow `.agents/workflows/new-command.md` — it contains the complete mandatory checklist.
 
-- Register it in `index.ts`
-- Keep it engine-agnostic
-- Resolve engine via `engine-factory`
-- Call `checkClientVersion()`
-- Use only `IDatabaseEngine` methods
-- Ensure it works for **all engines** or fails explicitly
+Summary:
 
-Shortcuts are forbidden.
+- Create `src/commands/<name>.ts` (engine-agnostic)
+- Register in `src/index.ts`
+- Call `checkClientVersion()` before any engine operation
+- Use only `IDatabaseEngine` methods — never touch binaries or config directly
+- Write unit tests and add to E2E workflows
+
+---
+
+## ADDING A NEW ENGINE
+
+Follow `.agents/workflows/new-engine.md` — it contains the complete mandatory checklist.
+
+Summary:
+
+- Add to `EngineType` in `core/interfaces/`
+- Implement `IDatabaseEngine` in `infra/engines/<name>/`
+- Register in `engine-factory.ts`
+- Create Docker Compose for E2E
+- Add npm scripts, unit tests, and E2E workflow
 
 ---
 
@@ -237,10 +270,11 @@ Shortcuts are forbidden.
 
 Before any `git commit`, you **MUST** run through the Gold Standard checklist.
 
-- You can trigger this behavior automatically by reading `/.agents/workflows/pre-commit.md`.
-- Ensure atomicity: one feature/fix per commit.
-- Update `package.json` and `README.md` versions if applicable.
-- Fill out the `.github/PULL_REQUEST_TEMPLATE.md` thoroughly.
+- Read `.agents/workflows/pre-commit.md` and follow every step
+- Ensure atomicity: one feature/fix per commit
+- Never commit directly to `master` — always use a branch and open a PR
+- Update `package.json` and both `README.md` / `README.pt-BR.md` versions if applicable
+- Fill out `.github/PULL_REQUEST_TEMPLATE.md` thoroughly
 
 ---
 
@@ -248,10 +282,12 @@ Before any `git commit`, you **MUST** run through the Gold Standard checklist.
 
 - DO NOT break layer boundaries
 - DO NOT introduce engine-specific logic outside `infra/`
-- DO NOT add “smart” defaults
+- DO NOT add "smart" defaults
 - DO NOT add silent fallbacks
 - DO NOT bypass factories
 - DO NOT mix concerns
+- DO NOT commit directly to `master`
+- DO NOT call `execa` outside `command-runner.ts`
 
 When unsure, stop and refactor.
 
@@ -261,5 +297,4 @@ When unsure, stop and refactor.
 
 Herdux values **predictability over convenience**.
 
-If a change makes the system harder to reason about,  
-it is the wrong change.
+If a change makes the system harder to reason about, it is the wrong change.
