@@ -84,6 +84,7 @@ function buildFakeProgram(programOpts: Record<string, unknown> = {}) {
   const command = {
     alias: jest.fn().mockReturnThis(),
     description: jest.fn().mockReturnThis(),
+    addHelpText: jest.fn().mockReturnThis(),
     option: jest.fn().mockReturnThis(),
     action(fn: ActionFn) {
       capturedAction = fn;
@@ -201,6 +202,18 @@ describe.each(engines)(
         expect.any(Object),
         "plain",
       );
+    });
+
+    it("exits if the database name contains invalid characters", async () => {
+      const { program } = buildFakeProgram();
+      registerBackupCmd(program as any);
+      await program.invokeAction("invalid name!", { format: "custom" });
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Invalid database name"),
+      );
+      expect(processExitSpy).toHaveBeenCalledWith(1);
+      expect(mockBackupDatabase).not.toHaveBeenCalled();
     });
 
     it("fails and exits if an invalid format is provided", async () => {

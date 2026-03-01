@@ -68,6 +68,7 @@ function buildFakeProgram() {
 
   const command = {
     description: jest.fn().mockReturnThis(),
+    addHelpText: jest.fn().mockReturnThis(),
     action(fn: ActionFn) {
       capturedAction = fn;
       return this;

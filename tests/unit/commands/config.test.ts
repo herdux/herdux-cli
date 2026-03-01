@@ -78,6 +78,7 @@ function buildFakeProgram(programOpts: Record<string, unknown> = {}) {
     command: jest.fn((name: string) => createCommandMocker(name.split(" ")[0])),
     description: jest.fn().mockReturnThis(),
     helpCommand: jest.fn().mockReturnThis(),
+    addHelpText: jest.fn().mockReturnThis(),
     alias: jest.fn().mockReturnThis(),
     action: jest.fn((fn: ActionFn) => {
       capturedActions.set(currentName, fn);

@@ -6,7 +6,17 @@ import { resolveEngineAndConnection } from "../infra/engines/resolve-connection.
 export function registerVersionCommand(program: Command): void {
   program
     .command("version")
-    .description("Show Database client and server versions")
+    .description(
+      "Show the database client version and detect running server instances",
+    )
+    .addHelpText(
+      "after",
+      `
+Examples:
+  hdx version
+  hdx version --engine mysql
+  hdx version --host 192.168.1.1`,
+    )
     .action(async () => {
       try {
         const rawOpts = program.opts();

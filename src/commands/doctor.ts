@@ -6,7 +6,17 @@ import { resolveEngineAndConnection } from "../infra/engines/resolve-connection.
 export function registerDoctorCommand(program: Command): void {
   program
     .command("doctor")
-    .description("Check system health and database dependencies")
+    .description(
+      "Check that all required binaries and dependencies are available",
+    )
+    .addHelpText(
+      "after",
+      `
+Examples:
+  hdx doctor
+  hdx doctor --engine postgres
+  hdx doctor --engine mysql`,
+    )
     .action(async () => {
       console.log(
         chalk.bold("\n--- Herdux Doctor - System Health Check ---\n"),

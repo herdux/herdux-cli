@@ -7,7 +7,19 @@ export function registerRestoreCommand(program: Command): void {
   program
     .command("restore <file>")
     .description(
-      "Restore a database from a backup file (auto-creates DB if missing)",
+      "Restore a database from a backup file (auto-creates the database if it does not exist)",
+    )
+    .addHelpText(
+      "after",
+      `
+Examples:
+  hdx restore backup.dump --db mydb
+  hdx restore backup.sql --db mydb --format plain
+  hdx restore backup.dump --db mydb --engine mysql
+  hdx restore backup.dump --db mydb --host 192.168.1.1 --user admin
+
+Note: If the target database does not exist it will be created automatically.
+      Restoration warnings (e.g. missing roles) are reported but do not stop the process.`,
     )
     .requiredOption("--db <name>", "Target database name for restore")
     .option("-F, --format <type>", "Override auto-detection (custom, plain)")
