@@ -1,5 +1,20 @@
 import { jest } from "@jest/globals";
 
+// --- Engine parametrize config ---
+
+const engines = [
+  {
+    engineType: "postgres" as const,
+    engineName: "PostgreSQL",
+    defaultOpts: { host: "localhost", port: "5432", user: "postgres" },
+  },
+  {
+    engineType: "mysql" as const,
+    engineName: "MySQL",
+    defaultOpts: { host: "localhost", port: "3306", user: "root" },
+  },
+];
+
 // --- Mocks ---
 
 const mockCheckClientVersion = jest.fn<() => Promise<void>>();
@@ -8,7 +23,7 @@ const mockCreateDatabase = jest.fn<() => Promise<void>>();
 const mockEngine = {
   checkClientVersion: mockCheckClientVersion,
   createDatabase: mockCreateDatabase,
-  getEngineName: jest.fn().mockReturnValue("PostgreSQL"),
+  getEngineName: jest.fn<() => string>(),
 };
 
 jest.unstable_mockModule(
@@ -18,16 +33,12 @@ jest.unstable_mockModule(
   }),
 );
 
+const mockResolveEngineAndConnection = jest.fn<() => Promise<any>>();
+
 jest.unstable_mockModule(
   "../../../src/infra/engines/resolve-connection.js",
   () => ({
-    resolveEngineAndConnection: jest.fn().mockImplementation(() =>
-      Promise.resolve({
-        engine: mockEngine,
-        engineType: "postgres",
-        opts: { host: "localhost", port: 5432, user: "postgres" },
-      }),
-    ),
+    resolveEngineAndConnection: mockResolveEngineAndConnection,
   }),
 );
 
@@ -99,95 +110,108 @@ function buildFakeProgram(programOpts: Record<string, unknown> = {}) {
 
 // --- Tests ---
 
-describe("registerCreateCommand", () => {
-  const consoleLogSpy = jest.spyOn(console, "log").mockImplementation(() => {});
-  const consoleErrorSpy = jest
-    .spyOn(console, "error")
-    .mockImplementation(() => {});
-  const processExitSpy = jest.spyOn(process, "exit").mockImplementation(() => {
-    throw new Error("PROCESS_EXIT_MOCK");
-  });
+describe.each(engines)(
+  "registerCreateCommand ($engineName)",
+  ({ engineType, engineName, defaultOpts }) => {
+    let consoleLogSpy: ReturnType<typeof jest.spyOn>;
+    let consoleErrorSpy: ReturnType<typeof jest.spyOn>;
+    let processExitSpy: ReturnType<typeof jest.spyOn>;
 
-  beforeEach(() => {
-    jest.clearAllMocks();
-    mockCheckClientVersion.mockResolvedValue(undefined);
-    mockCreateDatabase.mockResolvedValue(undefined);
-  });
+    beforeAll(() => {
+      consoleLogSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+      consoleErrorSpy = jest
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+      processExitSpy = jest.spyOn(process, "exit").mockImplementation(() => {
+        throw new Error("PROCESS_EXIT_MOCK");
+      });
+    });
 
-  afterAll(() => {
-    consoleLogSpy.mockRestore();
-    consoleErrorSpy.mockRestore();
-    processExitSpy.mockRestore();
-  });
+    beforeEach(() => {
+      jest.clearAllMocks();
+      mockEngine.getEngineName.mockReturnValue(engineName);
+      mockResolveEngineAndConnection.mockResolvedValue({
+        engine: mockEngine,
+        engineType,
+        opts: defaultOpts,
+      });
+      mockCheckClientVersion.mockResolvedValue(undefined);
+      mockCreateDatabase.mockResolvedValue(undefined);
+    });
 
-  it("registers a 'create <name>' command on the program", () => {
-    const { program, getCapturedCommandName } = buildFakeProgram();
-    registerCreateCmd(program as any);
-    expect(getCapturedCommandName()).toBe("create <name>");
-  });
+    afterAll(() => {
+      consoleLogSpy.mockRestore();
+      consoleErrorSpy.mockRestore();
+      processExitSpy.mockRestore();
+    });
 
-  it("successfully creates a database", async () => {
-    const { program } = buildFakeProgram();
-    registerCreateCmd(program as any);
-    await program.invokeAction("testdb");
+    it("registers a 'create <name>' command on the program", () => {
+      const { program, getCapturedCommandName } = buildFakeProgram();
+      registerCreateCmd(program as any);
+      expect(getCapturedCommandName()).toBe("create <name>");
+    });
 
-    expect(mockCreateDatabase).toHaveBeenLastCalledWith(
-      "testdb",
-      expect.any(Object),
-    );
-    expect(mockSpinnerSucceed).toHaveBeenLastCalledWith(
-      'Database "testdb" created successfully\n',
-    );
-  });
+    it("successfully creates a database", async () => {
+      const { program } = buildFakeProgram();
+      registerCreateCmd(program as any);
+      await program.invokeAction("testdb");
 
-  it("exits if the engine throws an error", async () => {
-    mockCreateDatabase.mockRejectedValue(new Error("Permission denied"));
-    const { program } = buildFakeProgram();
-    registerCreateCmd(program as any);
-    await program.invokeAction("testdb");
+      expect(mockCreateDatabase).toHaveBeenLastCalledWith(
+        "testdb",
+        expect.any(Object),
+      );
+      expect(mockSpinnerSucceed).toHaveBeenLastCalledWith(
+        'Database "testdb" created successfully\n',
+      );
+    });
 
-    expect(consoleErrorSpy).toHaveBeenLastCalledWith(
-      expect.stringContaining("Permission denied"),
-    );
-    expect(processExitSpy).toHaveBeenLastCalledWith(1);
-  });
+    it("exits if the engine throws an error", async () => {
+      mockCreateDatabase.mockRejectedValue(new Error("Permission denied"));
+      const { program } = buildFakeProgram();
+      registerCreateCmd(program as any);
+      await program.invokeAction("testdb");
 
-  it("handles non-Error exceptions gracefully", async () => {
-    mockCreateDatabase.mockRejectedValue("unexpected string error");
-    const { program } = buildFakeProgram();
-    registerCreateCmd(program as any);
-    await program.invokeAction("testdb");
+      expect(consoleErrorSpy).toHaveBeenLastCalledWith(
+        expect.stringContaining("Permission denied"),
+      );
+      expect(processExitSpy).toHaveBeenLastCalledWith(1);
+    });
 
-    expect(consoleErrorSpy).toHaveBeenLastCalledWith(
-      expect.stringContaining("unexpected string error"),
-    );
-    expect(processExitSpy).toHaveBeenLastCalledWith(1);
-  });
+    it("handles non-Error exceptions gracefully", async () => {
+      mockCreateDatabase.mockRejectedValue("unexpected string error");
+      const { program } = buildFakeProgram();
+      registerCreateCmd(program as any);
+      await program.invokeAction("testdb");
 
-  it("passes the config options to resolveEngineAndConnection", async () => {
-    const { resolveEngineAndConnection: mockResolver } =
-      await import("../../../src/infra/engines/resolve-connection.js");
-    const { program } = buildFakeProgram({ engine: "mysql" });
-    registerCreateCmd(program as any);
-    await program.invokeAction("testdb");
+      expect(consoleErrorSpy).toHaveBeenLastCalledWith(
+        expect.stringContaining("unexpected string error"),
+      );
+      expect(processExitSpy).toHaveBeenLastCalledWith(1);
+    });
 
-    expect(mockResolver).toHaveBeenCalledWith(
-      expect.objectContaining({ engine: "mysql" }),
-    );
-  });
+    it("passes the config options to resolveEngineAndConnection", async () => {
+      const { resolveEngineAndConnection: mockResolver } =
+        await import("../../../src/infra/engines/resolve-connection.js");
+      const { program } = buildFakeProgram({ engine: "mysql" });
+      registerCreateCmd(program as any);
+      await program.invokeAction("testdb");
 
-  it("fails and exits if checkClientVersion throws", async () => {
-    mockCheckClientVersion.mockRejectedValue(
-      new Error("mysql client not found"),
-    );
-    const { program } = buildFakeProgram();
-    registerCreateCmd(program as any);
-    await program.invokeAction("testdb");
+      expect(mockResolver).toHaveBeenCalledWith(
+        expect.objectContaining({ engine: "mysql" }),
+      );
+    });
 
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      expect.stringContaining("mysql client not found"),
-    );
-    expect(processExitSpy).toHaveBeenCalledWith(1);
-    expect(mockCreateDatabase).not.toHaveBeenCalled();
-  });
-});
+    it("fails and exits if checkClientVersion throws", async () => {
+      mockCheckClientVersion.mockRejectedValue(new Error("client not found"));
+      const { program } = buildFakeProgram();
+      registerCreateCmd(program as any);
+      await program.invokeAction("testdb");
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("client not found"),
+      );
+      expect(processExitSpy).toHaveBeenCalledWith(1);
+      expect(mockCreateDatabase).not.toHaveBeenCalled();
+    });
+  },
+);

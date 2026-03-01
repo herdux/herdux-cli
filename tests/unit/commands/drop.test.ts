@@ -1,5 +1,20 @@
 import { jest } from "@jest/globals";
 
+// --- Engine parametrize config ---
+
+const engines = [
+  {
+    engineType: "postgres" as const,
+    engineName: "PostgreSQL",
+    defaultOpts: { host: "localhost", port: "5432", user: "postgres" },
+  },
+  {
+    engineType: "mysql" as const,
+    engineName: "MySQL",
+    defaultOpts: { host: "localhost", port: "3306", user: "root" },
+  },
+];
+
 // --- Mocks ---
 
 const mockCheckClientVersion = jest.fn<() => Promise<void>>();
@@ -8,7 +23,7 @@ const mockDropDatabase = jest.fn<() => Promise<void>>();
 const mockEngine = {
   checkClientVersion: mockCheckClientVersion,
   dropDatabase: mockDropDatabase,
-  getEngineName: jest.fn().mockReturnValue("PostgreSQL"),
+  getEngineName: jest.fn<() => string>(),
 };
 
 jest.unstable_mockModule(
@@ -18,16 +33,12 @@ jest.unstable_mockModule(
   }),
 );
 
+const mockResolveEngineAndConnection = jest.fn<() => Promise<any>>();
+
 jest.unstable_mockModule(
   "../../../src/infra/engines/resolve-connection.js",
   () => ({
-    resolveEngineAndConnection: jest.fn().mockImplementation(() =>
-      Promise.resolve({
-        engine: mockEngine,
-        engineType: "postgres",
-        opts: { host: "localhost", port: 5432, user: "postgres" },
-      }),
-    ),
+    resolveEngineAndConnection: mockResolveEngineAndConnection,
   }),
 );
 
@@ -105,109 +116,130 @@ function buildFakeProgram(programOpts: Record<string, unknown> = {}) {
 
 // --- Tests ---
 
-describe("registerDropCommand", () => {
-  const consoleLogSpy = jest.spyOn(console, "log").mockImplementation(() => {});
-  const consoleErrorSpy = jest
-    .spyOn(console, "error")
-    .mockImplementation(() => {});
-  const processExitSpy = jest.spyOn(process, "exit").mockImplementation(() => {
-    throw new Error("PROCESS_EXIT_MOCK");
-  });
+describe.each(engines)(
+  "registerDropCommand ($engineName)",
+  ({ engineType, engineName, defaultOpts }) => {
+    let consoleLogSpy: ReturnType<typeof jest.spyOn>;
+    let consoleErrorSpy: ReturnType<typeof jest.spyOn>;
+    let processExitSpy: ReturnType<typeof jest.spyOn>;
 
-  beforeEach(() => {
-    jest.clearAllMocks();
-    mockCheckClientVersion.mockResolvedValue(undefined);
-    mockDropDatabase.mockResolvedValue(undefined);
-  });
+    beforeAll(() => {
+      consoleLogSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+      consoleErrorSpy = jest
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+      processExitSpy = jest.spyOn(process, "exit").mockImplementation(() => {
+        throw new Error("PROCESS_EXIT_MOCK");
+      });
+    });
 
-  afterAll(() => {
-    consoleLogSpy.mockRestore();
-    consoleErrorSpy.mockRestore();
-    processExitSpy.mockRestore();
-  });
+    beforeEach(() => {
+      jest.clearAllMocks();
+      mockEngine.getEngineName.mockReturnValue(engineName);
+      mockResolveEngineAndConnection.mockResolvedValue({
+        engine: mockEngine,
+        engineType,
+        opts: defaultOpts,
+      });
+      mockCheckClientVersion.mockResolvedValue(undefined);
+      mockDropDatabase.mockResolvedValue(undefined);
+    });
 
-  it("registers a 'drop <name>' command on the program", () => {
-    const { program, getCapturedCommandName } = buildFakeProgram();
-    registerDropCmd(program as any);
-    expect(getCapturedCommandName()).toBe("drop <name>");
-  });
+    afterAll(() => {
+      consoleLogSpy.mockRestore();
+      consoleErrorSpy.mockRestore();
+      processExitSpy.mockRestore();
+    });
 
-  it("successfully drops database without confirmation if --yes is passed", async () => {
-    const { program } = buildFakeProgram();
-    registerDropCmd(program as any);
-    await program.invokeAction("testdb", { yes: true });
+    it("registers a 'drop <name>' command on the program", () => {
+      const { program, getCapturedCommandName } = buildFakeProgram();
+      registerDropCmd(program as any);
+      expect(getCapturedCommandName()).toBe("drop <name>");
+    });
 
-    expect(mockDropDatabase).toHaveBeenCalledWith("testdb", expect.any(Object));
-    expect(mockSpinnerSucceed).toHaveBeenLastCalledWith(
-      'Database "testdb" dropped successfully\n',
-    );
-    expect(mockPromptsConfirm).not.toHaveBeenCalled();
-  });
+    it("successfully drops database without confirmation if --yes is passed", async () => {
+      const { program } = buildFakeProgram();
+      registerDropCmd(program as any);
+      await program.invokeAction("testdb", { yes: true });
 
-  it("prompts for confirmation and drops if user confirms", async () => {
-    mockPromptsConfirm.mockResolvedValue({ confirm: true });
+      expect(mockDropDatabase).toHaveBeenCalledWith(
+        "testdb",
+        expect.any(Object),
+      );
+      expect(mockSpinnerSucceed).toHaveBeenLastCalledWith(
+        'Database "testdb" dropped successfully\n',
+      );
+      expect(mockPromptsConfirm).not.toHaveBeenCalled();
+    });
 
-    const { program } = buildFakeProgram();
-    registerDropCmd(program as any);
-    await program.invokeAction("testdb", {});
+    it("prompts for confirmation and drops if user confirms", async () => {
+      mockPromptsConfirm.mockResolvedValue({ confirm: true });
 
-    expect(mockPromptsConfirm).toHaveBeenCalledTimes(1);
-    expect(mockDropDatabase).toHaveBeenCalledWith("testdb", expect.any(Object));
-    expect(mockSpinnerSucceed).toHaveBeenLastCalledWith(
-      'Database "testdb" dropped successfully\n',
-    );
-  });
+      const { program } = buildFakeProgram();
+      registerDropCmd(program as any);
+      await program.invokeAction("testdb", {});
 
-  it("prompts for confirmation and cancels if user declines", async () => {
-    mockPromptsConfirm.mockResolvedValue({ confirm: false });
+      expect(mockPromptsConfirm).toHaveBeenCalledTimes(1);
+      expect(mockDropDatabase).toHaveBeenCalledWith(
+        "testdb",
+        expect.any(Object),
+      );
+      expect(mockSpinnerSucceed).toHaveBeenLastCalledWith(
+        'Database "testdb" dropped successfully\n',
+      );
+    });
 
-    const { program } = buildFakeProgram();
-    registerDropCmd(program as any);
-    await program.invokeAction("testdb", {});
+    it("prompts for confirmation and cancels if user declines", async () => {
+      mockPromptsConfirm.mockResolvedValue({ confirm: false });
 
-    expect(mockPromptsConfirm).toHaveBeenCalledTimes(1);
-    expect(consoleLogSpy).toHaveBeenCalledWith(
-      expect.stringContaining("Operation cancelled"),
-    );
-    expect(mockDropDatabase).not.toHaveBeenCalled();
-  });
+      const { program } = buildFakeProgram();
+      registerDropCmd(program as any);
+      await program.invokeAction("testdb", {});
 
-  it("catches internal engine errors gracefully", async () => {
-    mockDropDatabase.mockRejectedValue(new Error("Database is in use"));
+      expect(mockPromptsConfirm).toHaveBeenCalledTimes(1);
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Operation cancelled"),
+      );
+      expect(mockDropDatabase).not.toHaveBeenCalled();
+    });
 
-    const { program } = buildFakeProgram();
-    registerDropCmd(program as any);
-    await program.invokeAction("testdb", { yes: true });
+    it("catches internal engine errors gracefully", async () => {
+      mockDropDatabase.mockRejectedValue(new Error("Database is in use"));
 
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      expect.stringContaining("Database is in use"),
-    );
-    expect(processExitSpy).toHaveBeenCalledWith(1);
-  });
+      const { program } = buildFakeProgram();
+      registerDropCmd(program as any);
+      await program.invokeAction("testdb", { yes: true });
 
-  it("handles non-Error exceptions gracefully", async () => {
-    mockDropDatabase.mockRejectedValue("unexpected string error");
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Database is in use"),
+      );
+      expect(processExitSpy).toHaveBeenCalledWith(1);
+    });
 
-    const { program } = buildFakeProgram();
-    registerDropCmd(program as any);
-    await program.invokeAction("testdb", { yes: true });
+    it("handles non-Error exceptions gracefully", async () => {
+      mockDropDatabase.mockRejectedValue("unexpected string error");
 
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      expect.stringContaining("unexpected string error"),
-    );
-    expect(processExitSpy).toHaveBeenCalledWith(1);
-  });
+      const { program } = buildFakeProgram();
+      registerDropCmd(program as any);
+      await program.invokeAction("testdb", { yes: true });
 
-  it("fails and exits if checkClientVersion throws", async () => {
-    mockCheckClientVersion.mockRejectedValue(new Error("psql not found"));
-    const { program } = buildFakeProgram();
-    registerDropCmd(program as any);
-    await program.invokeAction("testdb", { yes: true });
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("unexpected string error"),
+      );
+      expect(processExitSpy).toHaveBeenCalledWith(1);
+    });
 
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      expect.stringContaining("psql not found"),
-    );
-    expect(processExitSpy).toHaveBeenCalledWith(1);
-    expect(mockDropDatabase).not.toHaveBeenCalled();
-  });
-});
+    it("fails and exits if checkClientVersion throws", async () => {
+      mockCheckClientVersion.mockRejectedValue(new Error("client not found"));
+      const { program } = buildFakeProgram();
+      registerDropCmd(program as any);
+      await program.invokeAction("testdb", { yes: true });
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("client not found"),
+      );
+      expect(processExitSpy).toHaveBeenCalledWith(1);
+      expect(mockDropDatabase).not.toHaveBeenCalled();
+    });
+  },
+);

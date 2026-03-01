@@ -4,12 +4,28 @@ import type {
   HealthCheckResult,
 } from "../../../src/core/interfaces/database-engine.interface.js";
 
+// --- Engine parametrize config ---
+
+const engines = [
+  {
+    engineType: "postgres" as const,
+    engineName: "PostgreSQL",
+    defaultOpts: { host: "localhost", port: "5432", user: "postgres" },
+  },
+  {
+    engineType: "mysql" as const,
+    engineName: "MySQL",
+    defaultOpts: { host: "localhost", port: "3306", user: "root" },
+  },
+];
+
 // --- Mocks ---
 
 const mockGetHealthChecks = jest.fn<() => HealthCheck[]>();
 
 const mockEngine = {
   getHealthChecks: mockGetHealthChecks,
+  getEngineName: jest.fn<() => string>(),
 };
 
 jest.unstable_mockModule(
@@ -19,16 +35,12 @@ jest.unstable_mockModule(
   }),
 );
 
+const mockResolveEngineAndConnection = jest.fn<() => Promise<any>>();
+
 jest.unstable_mockModule(
   "../../../src/infra/engines/resolve-connection.js",
   () => ({
-    resolveEngineAndConnection: jest.fn().mockImplementation(() =>
-      Promise.resolve({
-        engine: mockEngine,
-        engineType: "postgres",
-        opts: { host: "localhost", port: 5432, user: "postgres" },
-      }),
-    ),
+    resolveEngineAndConnection: mockResolveEngineAndConnection,
   }),
 );
 
@@ -110,121 +122,134 @@ function makeRule(
 
 // --- Tests ---
 
-describe("registerDoctorCommand", () => {
-  const consoleLogSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+describe.each(engines)(
+  "registerDoctorCommand ($engineName)",
+  ({ engineType, engineName, defaultOpts }) => {
+    let consoleLogSpy: ReturnType<typeof jest.spyOn>;
 
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
+    beforeAll(() => {
+      consoleLogSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+    });
 
-  afterAll(() => {
-    consoleLogSpy.mockRestore();
-  });
+    beforeEach(() => {
+      jest.clearAllMocks();
+      mockEngine.getEngineName.mockReturnValue(engineName);
+      mockResolveEngineAndConnection.mockResolvedValue({
+        engine: mockEngine,
+        engineType,
+        opts: defaultOpts,
+      });
+    });
 
-  it("registers a 'doctor' command on the program", () => {
-    const { program, getCapturedCommandName } = buildFakeProgram();
-    registerDoctorCmd(program as any);
-    expect(getCapturedCommandName()).toBe("doctor");
-  });
+    afterAll(() => {
+      consoleLogSpy.mockRestore();
+    });
 
-  it("displays success message when all health checks pass", async () => {
-    mockGetHealthChecks.mockReturnValue([makeRule("success", "Rule passed")]);
+    it("registers a 'doctor' command on the program", () => {
+      const { program, getCapturedCommandName } = buildFakeProgram();
+      registerDoctorCmd(program as any);
+      expect(getCapturedCommandName()).toBe("doctor");
+    });
 
-    const { program } = buildFakeProgram();
-    registerDoctorCmd(program as any);
-    await program.invokeAction();
+    it("displays success message when all health checks pass", async () => {
+      mockGetHealthChecks.mockReturnValue([makeRule("success", "Rule passed")]);
 
-    expect(mockSpinnerSucceed).toHaveBeenCalledWith("Rule passed");
-    expect(consoleLogSpy).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "Your system is fully equipped to run Herdux commands!",
-      ),
-    );
-  });
+      const { program } = buildFakeProgram();
+      registerDoctorCmd(program as any);
+      await program.invokeAction();
 
-  it("displays warning spinner when a health check returns warn status", async () => {
-    mockGetHealthChecks.mockReturnValue([makeRule("warn", "Rule warning")]);
+      expect(mockSpinnerSucceed).toHaveBeenCalledWith("Rule passed");
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining(
+          "Your system is fully equipped to run Herdux commands!",
+        ),
+      );
+    });
 
-    const { program } = buildFakeProgram();
-    registerDoctorCmd(program as any);
-    await program.invokeAction();
+    it("displays warning spinner when a health check returns warn status", async () => {
+      mockGetHealthChecks.mockReturnValue([makeRule("warn", "Rule warning")]);
 
-    expect(mockSpinnerWarn).toHaveBeenCalledWith(
-      expect.stringContaining("Rule warning"),
-    );
-    expect(consoleLogSpy).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "Your system is fully equipped to run Herdux commands!",
-      ),
-    );
-  });
+      const { program } = buildFakeProgram();
+      registerDoctorCmd(program as any);
+      await program.invokeAction();
 
-  it("displays failure and overall error message when a health check fails", async () => {
-    mockGetHealthChecks.mockReturnValue([makeRule("error", "Rule failed")]);
+      expect(mockSpinnerWarn).toHaveBeenCalledWith(
+        expect.stringContaining("Rule warning"),
+      );
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining(
+          "Your system is fully equipped to run Herdux commands!",
+        ),
+      );
+    });
 
-    const { program } = buildFakeProgram();
-    registerDoctorCmd(program as any);
-    await program.invokeAction();
+    it("displays failure and overall error message when a health check fails", async () => {
+      mockGetHealthChecks.mockReturnValue([makeRule("error", "Rule failed")]);
 
-    expect(mockSpinnerFail).toHaveBeenCalledWith(
-      expect.stringContaining("Rule failed"),
-    );
-    expect(consoleLogSpy).toHaveBeenCalledWith(
-      expect.stringContaining("Some dependencies are missing"),
-    );
-  });
+      const { program } = buildFakeProgram();
+      registerDoctorCmd(program as any);
+      await program.invokeAction();
 
-  it("handles runtime exceptions thrown during a health check", async () => {
-    const crashingRule: HealthCheck = {
-      name: "Crash rule",
-      pendingMessage: "Checking crash...",
-      run: jest
-        .fn<() => Promise<HealthCheckResult>>()
-        .mockRejectedValue(new Error("Crashing error")),
-    };
-    mockGetHealthChecks.mockReturnValue([crashingRule]);
+      expect(mockSpinnerFail).toHaveBeenCalledWith(
+        expect.stringContaining("Rule failed"),
+      );
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Some dependencies are missing"),
+      );
+    });
 
-    const { program } = buildFakeProgram();
-    registerDoctorCmd(program as any);
-    await program.invokeAction();
+    it("handles runtime exceptions thrown during a health check", async () => {
+      const crashingRule: HealthCheck = {
+        name: "Crash rule",
+        pendingMessage: "Checking crash...",
+        run: jest
+          .fn<() => Promise<HealthCheckResult>>()
+          .mockRejectedValue(new Error("Crashing error")),
+      };
+      mockGetHealthChecks.mockReturnValue([crashingRule]);
 
-    expect(mockSpinnerFail).toHaveBeenCalledWith(
-      expect.stringContaining("Crash rule failed: Crashing error"),
-    );
-    expect(consoleLogSpy).toHaveBeenCalledWith(
-      expect.stringContaining("Some dependencies are missing"),
-    );
-  });
+      const { program } = buildFakeProgram();
+      registerDoctorCmd(program as any);
+      await program.invokeAction();
 
-  it("sets allOk to false when checks are mixed (success + warn + error)", async () => {
-    // Ensures that a passing check does not mask a later failing one —
-    // allOk must reflect the worst result across the entire run.
-    mockGetHealthChecks.mockReturnValue([
-      makeRule("success", "Check A passed"),
-      makeRule("warn", "Check B warning"),
-      makeRule("error", "Check C failed"),
-    ]);
+      expect(mockSpinnerFail).toHaveBeenCalledWith(
+        expect.stringContaining("Crash rule failed: Crashing error"),
+      );
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Some dependencies are missing"),
+      );
+    });
 
-    const { program } = buildFakeProgram();
-    registerDoctorCmd(program as any);
-    await program.invokeAction();
+    it("sets allOk to false when checks are mixed (success + warn + error)", async () => {
+      // Ensures that a passing check does not mask a later failing one —
+      // allOk must reflect the worst result across the entire run.
+      mockGetHealthChecks.mockReturnValue([
+        makeRule("success", "Check A passed"),
+        makeRule("warn", "Check B warning"),
+        makeRule("error", "Check C failed"),
+      ]);
 
-    expect(mockSpinnerSucceed).toHaveBeenCalledWith("Check A passed");
-    expect(mockSpinnerWarn).toHaveBeenCalledWith(
-      expect.stringContaining("Check B warning"),
-    );
-    expect(mockSpinnerFail).toHaveBeenCalledWith(
-      expect.stringContaining("Check C failed"),
-    );
+      const { program } = buildFakeProgram();
+      registerDoctorCmd(program as any);
+      await program.invokeAction();
 
-    // allOk must be false — the error check must win over the success and warn checks
-    expect(consoleLogSpy).toHaveBeenCalledWith(
-      expect.stringContaining("Some dependencies are missing"),
-    );
-    expect(consoleLogSpy).not.toHaveBeenCalledWith(
-      expect.stringContaining(
-        "Your system is fully equipped to run Herdux commands!",
-      ),
-    );
-  });
-});
+      expect(mockSpinnerSucceed).toHaveBeenCalledWith("Check A passed");
+      expect(mockSpinnerWarn).toHaveBeenCalledWith(
+        expect.stringContaining("Check B warning"),
+      );
+      expect(mockSpinnerFail).toHaveBeenCalledWith(
+        expect.stringContaining("Check C failed"),
+      );
+
+      // allOk must be false — the error check must win over the success and warn checks
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Some dependencies are missing"),
+      );
+      expect(consoleLogSpy).not.toHaveBeenCalledWith(
+        expect.stringContaining(
+          "Your system is fully equipped to run Herdux commands!",
+        ),
+      );
+    });
+  },
+);

@@ -1,5 +1,20 @@
 import { jest } from "@jest/globals";
 
+// --- Engine parametrize config ---
+
+const engines = [
+  {
+    engineType: "postgres" as const,
+    engineName: "PostgreSQL",
+    defaultOpts: { host: "localhost", port: "5432", user: "postgres" },
+  },
+  {
+    engineType: "mysql" as const,
+    engineName: "MySQL",
+    defaultOpts: { host: "localhost", port: "3306", user: "root" },
+  },
+];
+
 // --- Mocks ---
 
 const mockCheckClientVersion = jest.fn<() => Promise<void>>();
@@ -11,7 +26,7 @@ const mockEngine = {
   checkClientVersion: mockCheckClientVersion,
   createDatabase: mockCreateDatabase,
   restoreDatabase: mockRestoreDatabase,
-  getEngineName: jest.fn().mockReturnValue("PostgreSQL"),
+  getEngineName: jest.fn<() => string>(),
 };
 
 jest.unstable_mockModule(
@@ -21,16 +36,12 @@ jest.unstable_mockModule(
   }),
 );
 
+const mockResolveEngineAndConnection = jest.fn<() => Promise<any>>();
+
 jest.unstable_mockModule(
   "../../../src/infra/engines/resolve-connection.js",
   () => ({
-    resolveEngineAndConnection: jest.fn().mockImplementation(() =>
-      Promise.resolve({
-        engine: mockEngine,
-        engineType: "postgres",
-        opts: { host: "localhost", port: 5432, user: "postgres" },
-      }),
-    ),
+    resolveEngineAndConnection: mockResolveEngineAndConnection,
   }),
 );
 
@@ -116,173 +127,196 @@ function buildFakeProgram(programOpts: Record<string, unknown> = {}) {
 
 // --- Tests ---
 
-describe("registerRestoreCommand", () => {
-  const consoleLogSpy = jest.spyOn(console, "log").mockImplementation(() => {});
-  const consoleErrorSpy = jest
-    .spyOn(console, "error")
-    .mockImplementation(() => {});
-  const processExitSpy = jest.spyOn(process, "exit").mockImplementation(() => {
-    throw new Error("PROCESS_EXIT_MOCK");
-  });
+describe.each(engines)(
+  "registerRestoreCommand ($engineName)",
+  ({ engineType, engineName, defaultOpts }) => {
+    let consoleLogSpy: ReturnType<typeof jest.spyOn>;
+    let consoleErrorSpy: ReturnType<typeof jest.spyOn>;
+    let processExitSpy: ReturnType<typeof jest.spyOn>;
 
-  beforeEach(() => {
-    jest.clearAllMocks();
-    mockCheckClientVersion.mockResolvedValue(undefined);
-    mockCreateDatabase.mockResolvedValue(undefined);
-    mockRestoreDatabase.mockResolvedValue(undefined);
-  });
-
-  afterAll(() => {
-    consoleLogSpy.mockRestore();
-    consoleErrorSpy.mockRestore();
-    processExitSpy.mockRestore();
-  });
-
-  it("registers a 'restore <file>' command on the program", () => {
-    const { program, getCapturedCommandName } = buildFakeProgram();
-    registerRestoreCmd(program as any);
-    expect(getCapturedCommandName()).toBe("restore <file>");
-  });
-
-  it("fails and exits if an invalid format is provided", async () => {
-    const { program } = buildFakeProgram();
-    registerRestoreCmd(program as any);
-    await program.invokeAction("dump.sql", {
-      db: "testdb",
-      format: "invalid-format",
+    beforeAll(() => {
+      consoleLogSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+      consoleErrorSpy = jest
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+      processExitSpy = jest.spyOn(process, "exit").mockImplementation(() => {
+        throw new Error("PROCESS_EXIT_MOCK");
+      });
     });
 
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Invalid format "invalid-format"'),
-    );
-    expect(processExitSpy).toHaveBeenCalledWith(1);
-    expect(mockRestoreDatabase).not.toHaveBeenCalled();
-  });
-
-  it("successfully restores an existing database", async () => {
-    mockCreateDatabase.mockRejectedValue(
-      new Error('database "testdb" already exists'),
-    );
-
-    const { program } = buildFakeProgram();
-    registerRestoreCmd(program as any);
-    await program.invokeAction("dump.sql", { db: "testdb", format: "custom" });
-
-    expect(mockRestoreDatabase).toHaveBeenCalledWith(
-      "dump.sql",
-      "testdb",
-      expect.any(Object),
-      "custom",
-    );
-    expect(mockSpinnerSucceed).toHaveBeenCalledWith(
-      expect.stringContaining('Database "testdb" restored successfully'),
-    );
-    // didCreateDb was false — the "automatically created" note must not appear
-    expect(mockSpinnerSucceed).not.toHaveBeenCalledWith(
-      expect.stringContaining("automatically created"),
-    );
-  });
-
-  it("completes with a warning successfully when engine returns warnings", async () => {
-    mockCreateDatabase.mockRejectedValue(
-      new Error('database "testdb" already exists'),
-    );
-    mockRestoreDatabase.mockResolvedValue({
-      hasWarnings: true,
-      warnings: "warning: some roles or permissions could not be created",
+    beforeEach(() => {
+      jest.clearAllMocks();
+      mockEngine.getEngineName.mockReturnValue(engineName);
+      mockResolveEngineAndConnection.mockResolvedValue({
+        engine: mockEngine,
+        engineType,
+        opts: defaultOpts,
+      });
+      mockCheckClientVersion.mockResolvedValue(undefined);
+      mockCreateDatabase.mockResolvedValue(undefined);
+      mockRestoreDatabase.mockResolvedValue(undefined);
     });
 
-    const { program } = buildFakeProgram();
-    registerRestoreCmd(program as any);
-    await program.invokeAction("dump.sql", { db: "testdb", format: "custom" });
+    afterAll(() => {
+      consoleLogSpy.mockRestore();
+      consoleErrorSpy.mockRestore();
+      processExitSpy.mockRestore();
+    });
 
-    expect(mockRestoreDatabase).toHaveBeenCalledWith(
-      "dump.sql",
-      "testdb",
-      expect.any(Object),
-      "custom",
-    );
-    expect(mockSpinnerWarn).toHaveBeenCalledWith(
-      expect.stringContaining("Restore completed with warnings"),
-    );
-    expect(mockSpinnerSucceed).not.toHaveBeenCalled();
-  });
+    it("registers a 'restore <file>' command on the program", () => {
+      const { program, getCapturedCommandName } = buildFakeProgram();
+      registerRestoreCmd(program as any);
+      expect(getCapturedCommandName()).toBe("restore <file>");
+    });
 
-  it("auto-creates the database and restores when it does not exist", async () => {
-    mockCreateDatabase.mockResolvedValue(undefined);
+    it("fails and exits if an invalid format is provided", async () => {
+      const { program } = buildFakeProgram();
+      registerRestoreCmd(program as any);
+      await program.invokeAction("dump.sql", {
+        db: "testdb",
+        format: "invalid-format",
+      });
 
-    const { program } = buildFakeProgram();
-    registerRestoreCmd(program as any);
-    await program.invokeAction("dump.sql", { db: "testdb" });
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Invalid format "invalid-format"'),
+      );
+      expect(processExitSpy).toHaveBeenCalledWith(1);
+      expect(mockRestoreDatabase).not.toHaveBeenCalled();
+    });
 
-    expect(mockCreateDatabase).toHaveBeenCalledWith(
-      "testdb",
-      expect.any(Object),
-    );
-    expect(mockRestoreDatabase).toHaveBeenCalledWith(
-      "dump.sql",
-      "testdb",
-      expect.any(Object),
-      undefined,
-    );
-    expect(mockSpinnerSucceed).toHaveBeenCalledWith(
-      expect.stringContaining("automatically created"),
-    );
-  });
+    it("successfully restores an existing database", async () => {
+      mockCreateDatabase.mockRejectedValue(
+        new Error('database "testdb" already exists'),
+      );
 
-  it("fails and exits when database creation throws an unexpected error", async () => {
-    mockCreateDatabase.mockRejectedValue(new Error("permission denied"));
+      const { program } = buildFakeProgram();
+      registerRestoreCmd(program as any);
+      await program.invokeAction("dump.sql", {
+        db: "testdb",
+        format: "custom",
+      });
 
-    const { program } = buildFakeProgram();
-    registerRestoreCmd(program as any);
-    await program.invokeAction("dump.sql", { db: "testdb" });
+      expect(mockRestoreDatabase).toHaveBeenCalledWith(
+        "dump.sql",
+        "testdb",
+        expect.any(Object),
+        "custom",
+      );
+      expect(mockSpinnerSucceed).toHaveBeenCalledWith(
+        expect.stringContaining('Database "testdb" restored successfully'),
+      );
+      // didCreateDb was false — the "automatically created" note must not appear
+      expect(mockSpinnerSucceed).not.toHaveBeenCalledWith(
+        expect.stringContaining("automatically created"),
+      );
+    });
 
-    expect(mockSpinnerFail).toHaveBeenCalledWith(
-      'Failed to verify or create database "testdb"',
-    );
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      expect.stringContaining("permission denied"),
-    );
-    expect(processExitSpy).toHaveBeenCalledWith(1);
-    expect(mockRestoreDatabase).not.toHaveBeenCalled();
-  });
+    it("completes with a warning successfully when engine returns warnings", async () => {
+      mockCreateDatabase.mockRejectedValue(
+        new Error('database "testdb" already exists'),
+      );
+      mockRestoreDatabase.mockResolvedValue({
+        hasWarnings: true,
+        warnings: "warning: some roles or permissions could not be created",
+      });
 
-  it("fails and exits when the restore engine throws an error", async () => {
-    mockRestoreDatabase.mockRejectedValue(new Error("pg_restore failed"));
+      const { program } = buildFakeProgram();
+      registerRestoreCmd(program as any);
+      await program.invokeAction("dump.sql", {
+        db: "testdb",
+        format: "custom",
+      });
 
-    const { program } = buildFakeProgram();
-    registerRestoreCmd(program as any);
-    await program.invokeAction("dump.sql", { db: "testdb" });
+      expect(mockRestoreDatabase).toHaveBeenCalledWith(
+        "dump.sql",
+        "testdb",
+        expect.any(Object),
+        "custom",
+      );
+      expect(mockSpinnerWarn).toHaveBeenCalledWith(
+        expect.stringContaining("Restore completed with warnings"),
+      );
+      expect(mockSpinnerSucceed).not.toHaveBeenCalled();
+    });
 
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      expect.stringContaining("pg_restore failed"),
-    );
-    expect(processExitSpy).toHaveBeenCalledWith(1);
-  });
+    it("auto-creates the database and restores when it does not exist", async () => {
+      mockCreateDatabase.mockResolvedValue(undefined);
 
-  it("handles non-Error exceptions gracefully", async () => {
-    mockRestoreDatabase.mockRejectedValue("unexpected string error");
+      const { program } = buildFakeProgram();
+      registerRestoreCmd(program as any);
+      await program.invokeAction("dump.sql", { db: "testdb" });
 
-    const { program } = buildFakeProgram();
-    registerRestoreCmd(program as any);
-    await program.invokeAction("dump.sql", { db: "testdb" });
+      expect(mockCreateDatabase).toHaveBeenCalledWith(
+        "testdb",
+        expect.any(Object),
+      );
+      expect(mockRestoreDatabase).toHaveBeenCalledWith(
+        "dump.sql",
+        "testdb",
+        expect.any(Object),
+        undefined,
+      );
+      expect(mockSpinnerSucceed).toHaveBeenCalledWith(
+        expect.stringContaining("automatically created"),
+      );
+    });
 
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      expect.stringContaining("unexpected string error"),
-    );
-    expect(processExitSpy).toHaveBeenCalledWith(1);
-  });
+    it("fails and exits when database creation throws an unexpected error", async () => {
+      mockCreateDatabase.mockRejectedValue(new Error("permission denied"));
 
-  it("fails and exits if checkClientVersion throws", async () => {
-    mockCheckClientVersion.mockRejectedValue(new Error("pg_restore not found"));
-    const { program } = buildFakeProgram();
-    registerRestoreCmd(program as any);
-    await program.invokeAction("dump.sql", { db: "testdb" });
+      const { program } = buildFakeProgram();
+      registerRestoreCmd(program as any);
+      await program.invokeAction("dump.sql", { db: "testdb" });
 
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      expect.stringContaining("pg_restore not found"),
-    );
-    expect(processExitSpy).toHaveBeenCalledWith(1);
-    expect(mockRestoreDatabase).not.toHaveBeenCalled();
-  });
-});
+      expect(mockSpinnerFail).toHaveBeenCalledWith(
+        'Failed to verify or create database "testdb"',
+      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("permission denied"),
+      );
+      expect(processExitSpy).toHaveBeenCalledWith(1);
+      expect(mockRestoreDatabase).not.toHaveBeenCalled();
+    });
+
+    it("fails and exits when the restore engine throws an error", async () => {
+      mockRestoreDatabase.mockRejectedValue(new Error("pg_restore failed"));
+
+      const { program } = buildFakeProgram();
+      registerRestoreCmd(program as any);
+      await program.invokeAction("dump.sql", { db: "testdb" });
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("pg_restore failed"),
+      );
+      expect(processExitSpy).toHaveBeenCalledWith(1);
+    });
+
+    it("handles non-Error exceptions gracefully", async () => {
+      mockRestoreDatabase.mockRejectedValue("unexpected string error");
+
+      const { program } = buildFakeProgram();
+      registerRestoreCmd(program as any);
+      await program.invokeAction("dump.sql", { db: "testdb" });
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("unexpected string error"),
+      );
+      expect(processExitSpy).toHaveBeenCalledWith(1);
+    });
+
+    it("fails and exits if checkClientVersion throws", async () => {
+      mockCheckClientVersion.mockRejectedValue(
+        new Error("pg_restore not found"),
+      );
+      const { program } = buildFakeProgram();
+      registerRestoreCmd(program as any);
+      await program.invokeAction("dump.sql", { db: "testdb" });
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("pg_restore not found"),
+      );
+      expect(processExitSpy).toHaveBeenCalledWith(1);
+      expect(mockRestoreDatabase).not.toHaveBeenCalled();
+    });
+  },
+);
