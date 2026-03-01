@@ -1,5 +1,11 @@
 /** @type {import('ts-jest').JestConfigWithTsJest} */
 export default {
+  // Coverage collection is scoped to the commands layer.
+  // Unit tests mock infra/engines entirely — that layer is validated by E2E tests.
+  collectCoverageFrom: ["<rootDir>/src/commands/**/*.ts"],
+  coverageThreshold: {
+    global: { lines: 95, functions: 95, branches: 80, statements: 95 },
+  },
   projects: [
     {
       displayName: "unit",
