@@ -9,7 +9,20 @@ export function registerConfigCommand(program: Command): void {
   const configCmd = program
     .command("config")
     .helpCommand(false)
-    .description("Manage Herdux configuration");
+    .description(
+      "Manage Herdux configuration (default connection, server profiles, scan ports)",
+    )
+    .addHelpText(
+      "after",
+      `
+Examples:
+  hdx config list
+  hdx config set host 192.168.1.1
+  hdx config set engine mysql
+  hdx config get host
+  hdx config add-server prod --host prod.example.com --user admin
+  hdx config scan-ports 5432 5433`,
+    );
 
   configCmd;
   configCmd
@@ -173,7 +186,21 @@ export function registerConfigCommand(program: Command): void {
   configCmd
     .command("scan-ports <ports...>")
     .alias("scan")
-    .description("Set custom ports to scan for database instances")
+    .description(
+      "Set custom ports used when auto-discovering running database instances",
+    )
+    .addHelpText(
+      "after",
+      `
+Examples:
+  hdx config scan-ports 5432
+  hdx config scan-ports 5432 5433
+  hdx config scan-ports 3306 3307
+
+Note: These ports are used when no explicit --port flag is provided and Herdux needs
+      to auto-detect a running server (e.g. on 'hdx version' or 'hdx list').
+      Use 'hdx config list' to see the currently configured scan ports.`,
+    )
     .action((ports: string[]) => {
       config.setScanPorts(ports);
       logger.success(`Scan ports set to: ${chalk.cyan(ports.join(", "))}`);

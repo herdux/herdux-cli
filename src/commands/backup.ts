@@ -10,7 +10,17 @@ import { homedir } from "os";
 export function registerBackupCommand(program: Command): void {
   program
     .command("backup <database>")
-    .description("Create a backup of a database")
+    .description("Create a backup of a database to a local file")
+    .addHelpText(
+      "after",
+      `
+Examples:
+  hdx backup mydb
+  hdx backup mydb --output /tmp/backups
+  hdx backup mydb --format plain
+  hdx backup mydb --drop --yes     # Backup then drop without confirmation
+  hdx backup mydb --engine mysql`,
+    )
     .option(
       "-o, --output <dir>",
       "Output directory for the backup (overrides global config)",
@@ -32,6 +42,15 @@ export function registerBackupCommand(program: Command): void {
           format: string;
         },
       ) => {
+        if (/[\s;|&`$<>(){}\\]/.test(database)) {
+          console.error(
+            chalk.red(
+              `\n✖ Invalid database name "${database}". Avoid spaces and special characters (; | & \` $ < > ( ) { } \\).\n`,
+            ),
+          );
+          process.exit(1);
+        }
+
         try {
           const rawOpts = program.opts();
           const { engine, opts } = await resolveEngineAndConnection(rawOpts);

@@ -7,9 +7,27 @@ import { resolveEngineAndConnection } from "../infra/engines/resolve-connection.
 export function registerDropCommand(program: Command): void {
   program
     .command("drop <name>")
-    .description("Drop a database")
+    .description("Permanently drop a database (irreversible)")
+    .addHelpText(
+      "after",
+      `
+Examples:
+  hdx drop mydb
+  hdx drop mydb --yes          # Skip confirmation prompt
+  hdx drop mydb --engine mysql
+  hdx drop mydb --host 192.168.1.1 --user admin`,
+    )
     .option("-y, --yes", "Skip confirmation prompt")
     .action(async (name: string, cmdOpts: { yes?: boolean }) => {
+      if (/[\s;|&`$<>(){}\\]/.test(name)) {
+        console.error(
+          chalk.red(
+            `\n✖ Invalid database name "${name}". Avoid spaces and special characters (; | & \` $ < > ( ) { } \\).\n`,
+          ),
+        );
+        process.exit(1);
+      }
+
       try {
         const rawOpts = program.opts();
         const { engine, opts } = await resolveEngineAndConnection(rawOpts);

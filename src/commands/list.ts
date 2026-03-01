@@ -7,7 +7,17 @@ export function registerListCommand(program: Command): void {
   program
     .command("list")
     .alias("ls")
-    .description("List all databases")
+    .description("List all databases on the connected server")
+    .addHelpText(
+      "after",
+      `
+Examples:
+  hdx list
+  hdx ls
+  hdx list --size
+  hdx list --engine mysql
+  hdx list --host 192.168.1.1 --user admin`,
+    )
     .option(
       "-S, --size",
       "Calculate and include database sizes (sorted from largest to smallest)",

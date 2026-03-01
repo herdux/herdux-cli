@@ -6,8 +6,25 @@ import { resolveEngineAndConnection } from "../infra/engines/resolve-connection.
 export function registerCreateCommand(program: Command): void {
   program
     .command("create <name>")
-    .description("Create a new database")
+    .description("Create a new empty database")
+    .addHelpText(
+      "after",
+      `
+Examples:
+  hdx create mydb
+  hdx create mydb --engine mysql
+  hdx create mydb --host 192.168.1.1 --user admin`,
+    )
     .action(async (name: string) => {
+      if (/[\s;|&`$<>(){}\\]/.test(name)) {
+        console.error(
+          chalk.red(
+            `\n✖ Invalid database name "${name}". Avoid spaces and special characters (; | & \` $ < > ( ) { } \\).\n`,
+          ),
+        );
+        process.exit(1);
+      }
+
       try {
         const rawOpts = program.opts();
         const { engine, opts } = await resolveEngineAndConnection(rawOpts);

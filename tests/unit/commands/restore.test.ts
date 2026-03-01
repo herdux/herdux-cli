@@ -76,6 +76,7 @@ function buildFakeProgram(programOpts: Record<string, unknown> = {}) {
   const command = {
     alias: jest.fn().mockReturnThis(),
     description: jest.fn().mockReturnThis(),
+    addHelpText: jest.fn().mockReturnThis(),
     option: jest.fn().mockReturnThis(),
     requiredOption: jest.fn().mockReturnThis(),
     action(fn: ActionFn) {

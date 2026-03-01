@@ -10,7 +10,18 @@ import { homedir } from "os";
 export function registerCleanCommand(program: Command): void {
   program
     .command("clean")
-    .description("Interactive bulk cleanup tool to drop multiple databases")
+    .description("Interactively select and drop multiple databases at once")
+    .addHelpText(
+      "after",
+      `
+Examples:
+  hdx clean
+  hdx clean --engine mysql
+  hdx clean --host 192.168.1.1 --user admin
+
+Note: You will be prompted to select databases, optionally backup them first,
+      and confirm before any data is deleted.`,
+    )
     .action(async () => {
       try {
         const rawOpts = program.opts();
