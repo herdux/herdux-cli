@@ -8,7 +8,7 @@ on:
 
 jobs:
   lint-and-test:
-    name: Lint & Unit Tests
+    name: Lint, Unit & Integration Tests
     runs-on: ubuntu-latest
 
     strategy:
