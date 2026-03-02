@@ -201,6 +201,8 @@ export async function resolveEngineAndConnection(
   }
 
   // No server profile — merge CLI opts with config defaults
+  const engineDefaults = engine.getDefaultConnectionOptions();
+
   const merged: ConnectionOptions = {
     host: rawOpts.host ?? savedDefaults.host,
     port: rawOpts.port ?? savedDefaults.port,
@@ -210,6 +212,20 @@ export async function resolveEngineAndConnection(
 
   if (merged.port) {
     return { engine, engineType, opts: merged };
+  }
+
+  // Engines that don't use ports (e.g. SQLite) skip port-based auto-discovery.
+  // They are fully identified by their host (database directory) alone.
+  if (!engineDefaults.port) {
+    return {
+      engine,
+      engineType,
+      opts: {
+        host: merged.host ?? engineDefaults.host,
+        user: merged.user ?? engineDefaults.user,
+        password: merged.password,
+      },
+    };
   }
 
   // --- Step 4: Auto-discovery ---
