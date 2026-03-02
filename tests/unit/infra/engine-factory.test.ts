@@ -17,6 +17,11 @@ describe("createEngine", () => {
     expect(engine.getEngineName()).toBe("MySQL");
   });
 
+  it('returns a SqliteEngine when called with "sqlite"', () => {
+    const engine = createEngine("sqlite");
+    expect(engine.getEngineName()).toBe("SQLite");
+  });
+
   it("returns PostgresEngine as default when called without arguments", () => {
     const engine = createEngine();
     expect(engine.getEngineName()).toBe("PostgreSQL");
@@ -41,5 +46,12 @@ describe("createEngine", () => {
       port: "3306",
       user: "root",
     });
+
+    const sqlite = createEngine("sqlite");
+    const sqliteOpts = sqlite.getDefaultConnectionOptions();
+    // SQLite uses host as the database directory; defaults to ~/.herdux/sqlite
+    expect(sqliteOpts.host).toMatch(/\.herdux[/\\]sqlite$/);
+    expect(sqliteOpts.port).toBeUndefined();
+    expect(sqliteOpts.user).toBeUndefined();
   });
 });

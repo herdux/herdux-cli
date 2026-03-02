@@ -61,7 +61,7 @@ program.hook("preAction", () => {
     }
   }
 
-  const validEngines = ["postgres", "mysql"];
+  const validEngines = ["postgres", "mysql", "sqlite"];
   if (opts.engine !== undefined && !validEngines.includes(opts.engine)) {
     console.error(
       chalk.red(

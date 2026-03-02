@@ -127,6 +127,7 @@ This flow is **canonical**. Do not invent alternatives.
 | ---------- | ------------ | ------------ | ------------------------------- | -------------------------------- |
 | PostgreSQL | `"postgres"` | 5432         | `psql`, `pg_dump`, `pg_restore` | custom (`.dump`), plain (`.sql`) |
 | MySQL      | `"mysql"`    | 3306         | `mysql`, `mysqldump`            | plain (`.sql`)                   |
+| SQLite     | `"sqlite"`   | N/A          | `sqlite3`                       | custom (`.db`), plain (`.sql`)   |
 
 To add a new engine, follow `.agents/workflows/new-engine.md`.
 
@@ -209,6 +210,7 @@ Herdux uses a three-tier strategy: **unit → integration → E2E**.
 | Integration      | `npm run test:integration` | No               |
 | E2E (PostgreSQL) | `npm run test:e2e:pgsql`   | Yes              |
 | E2E (MySQL)      | `npm run test:e2e:mysql`   | Yes              |
+| E2E (SQLite)     | `npm run test:e2e:sqlite`  | No               |
 
 For patterns, mocking conventions, and detailed standards, read `.agents/workflows/testing.md`.
 
