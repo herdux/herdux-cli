@@ -151,7 +151,27 @@ Use `beforeAll` to start the container and `afterAll` to stop it.
 
 ---
 
-### 8. Create unit tests
+### 8. Register the engine in the unit test helper
+
+**File:** `tests/unit/helpers/engines.ts`
+
+Add the new engine to the `engines` array so all parametrized command tests automatically run against it:
+
+```typescript
+export const engines: EngineConfig[] = [
+  // ... existing engines ...
+  {
+    engineType: "yourengine",
+    engineName: "YourEngine",
+    defaultOpts: { host: "localhost", port: "1234", user: "admin" },
+    clientVersionStr: "yourengine version 1.0.0",
+  },
+];
+```
+
+---
+
+### 9. Create unit tests
 
 **Directory:** `tests/unit/`
 
@@ -166,7 +186,7 @@ At minimum:
 
 ---
 
-### 9. Add CI job
+### 10. Add CI job
 
 **File:** `.github/workflows/ci.yml`
 
@@ -178,7 +198,7 @@ Add a new job following the pattern of `e2e-postgres` or `e2e-mysql`. Ensure it:
 
 ---
 
-### 10. Update documentation
+### 11. Update documentation
 
 - `README.md` — add engine to supported engines table and requirements section
 - `README.pt-BR.md` — same in Portuguese
@@ -186,6 +206,6 @@ Add a new job following the pattern of `e2e-postgres` or `e2e-mysql`. Ensure it:
 
 ---
 
-### 11. Run pre-commit workflow
+### 12. Run pre-commit workflow
 
 Follow `.agents/workflows/pre-commit.md` before committing.

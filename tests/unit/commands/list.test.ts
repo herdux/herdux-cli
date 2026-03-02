@@ -186,6 +186,17 @@ describe.each(engines)(
       expect(allOutput).toContain("SIZE");
     });
 
+    it("renders empty strings for databases with undefined owner and encoding", async () => {
+      mockListDatabases.mockResolvedValue([{ name: "orphan" }]);
+
+      const { program } = buildFakeProgram();
+      registerListCommand(program as any);
+      await program.invokeAction({ size: false });
+
+      const allOutput = consoleLogSpy.mock.calls.flat().join("\n");
+      expect(allOutput).toContain("orphan");
+    });
+
     it("does not render size column when db.size is undefined", async () => {
       mockListDatabases.mockResolvedValue([
         { name: "nodb", owner: "owner1", encoding: "UTF8", size: undefined },

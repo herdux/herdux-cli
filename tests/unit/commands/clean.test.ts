@@ -160,6 +160,8 @@ describe.each(engines)(
       mockCheckBackupRequirements.mockResolvedValue(undefined);
       mockBackupDatabase.mockResolvedValue("/output/path/backup.dump");
       mockDropDatabase.mockResolvedValue(undefined);
+      // Reset config default so tests that call mockReturnValue({}) don't bleed into others.
+      mockConfigGetDefault.mockReturnValue({ output: "/default/backup/dir" });
     });
 
     afterAll(() => {
@@ -300,6 +302,85 @@ describe.each(engines)(
       );
       expect(mockSpinnerSucceed).toHaveBeenLastCalledWith('Dropped "db2"');
       expect(processExitSpy).not.toHaveBeenCalled();
+    });
+
+    it("catches non-Error thrown values from dropDatabase in loop", async () => {
+      mockPrompts
+        .mockResolvedValueOnce({ selectedDbs: ["db1"] })
+        .mockResolvedValueOnce({ backupFirst: false })
+        .mockResolvedValueOnce({ confirm: true });
+
+      mockDropDatabase.mockRejectedValueOnce("non-error drop failure");
+
+      const { program } = buildFakeProgram();
+      registerCleanCmd(program as any);
+      await program.invokeAction();
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("non-error drop failure"),
+      );
+      expect(processExitSpy).not.toHaveBeenCalled();
+    });
+
+    it("uses the homedir fallback when config has no output directory during backup", async () => {
+      mockConfigGetDefault.mockReturnValue({});
+      mockPrompts
+        .mockResolvedValueOnce({ selectedDbs: ["db1"] })
+        .mockResolvedValueOnce({ backupFirst: true })
+        .mockResolvedValueOnce({ confirm: true });
+
+      const { program } = buildFakeProgram();
+      registerCleanCmd(program as any);
+      await program.invokeAction();
+
+      const callArgs = mockBackupDatabase.mock.calls[0] as unknown[];
+      const usedDir = callArgs[1] as string;
+      expect(usedDir).toMatch(/\.herdux[/\\]backups$/);
+    });
+
+    it("catches non-Error thrown values from backupDatabase in loop", async () => {
+      mockPrompts
+        .mockResolvedValueOnce({ selectedDbs: ["db1"] })
+        .mockResolvedValueOnce({ backupFirst: true });
+
+      mockBackupDatabase.mockRejectedValueOnce("disk quota exceeded");
+
+      const { program } = buildFakeProgram();
+      registerCleanCmd(program as any);
+      await program.invokeAction();
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("disk quota exceeded"),
+      );
+      expect(processExitSpy).toHaveBeenCalledWith(1);
+    });
+
+    it("handles outer engine errors gracefully and exits", async () => {
+      mockResolveEngineAndConnection.mockRejectedValueOnce(
+        new Error("connection refused"),
+      );
+
+      const { program } = buildFakeProgram();
+      registerCleanCmd(program as any);
+      await program.invokeAction();
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("connection refused"),
+      );
+      expect(processExitSpy).toHaveBeenCalledWith(1);
+    });
+
+    it("handles outer non-Error thrown values and exits", async () => {
+      mockResolveEngineAndConnection.mockRejectedValueOnce("socket timeout");
+
+      const { program } = buildFakeProgram();
+      registerCleanCmd(program as any);
+      await program.invokeAction();
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("socket timeout"),
+      );
+      expect(processExitSpy).toHaveBeenCalledWith(1);
     });
   },
 );

@@ -9,7 +9,13 @@ const mockLoadConfig = jest.fn<
     default: Record<string, string>;
     servers: Record<
       string,
-      { host?: string; port?: string; user?: string; password?: string }
+      {
+        engine?: string;
+        host?: string;
+        port?: string;
+        user?: string;
+        password?: string;
+      }
     >;
     scan_ports: string[];
   }
@@ -191,6 +197,20 @@ describe("registerConfigCommand", () => {
         expect.stringContaining("No value set"),
       );
     });
+
+    it("masks the password value when the password key is requested", async () => {
+      mockGetDefault.mockReturnValue({ password: "mysecret" });
+      const { program } = buildFakeProgram();
+      registerConfigCmd(program as any);
+      await program.invokeAction("get", "password");
+
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining("••••••"),
+      );
+      expect(consoleLogSpy).not.toHaveBeenCalledWith(
+        expect.stringContaining("mysecret"),
+      );
+    });
   });
 
   describe("list subcommand", () => {
@@ -268,6 +288,34 @@ describe("registerConfigCommand", () => {
         expect.stringContaining("No server profiles configured"),
       );
     });
+
+    it("renders all server profile fields when present (engine, host, port, user, password)", async () => {
+      mockLoadConfig.mockReturnValue({
+        default: {},
+        servers: {
+          full: {
+            engine: "mysql",
+            host: "db.example.com",
+            port: "3306",
+            user: "admin",
+            password: "secret",
+          },
+        },
+        scan_ports: [],
+      });
+
+      const { program } = buildFakeProgram();
+      registerConfigCmd(program as any);
+      await program.invokeAction("list");
+
+      const allOutput = consoleLogSpy.mock.calls.flat().join("\n");
+      expect(allOutput).toContain("engine=mysql");
+      expect(allOutput).toContain("host=db.example.com");
+      expect(allOutput).toContain("port=3306");
+      expect(allOutput).toContain("user=admin");
+      expect(allOutput).toContain("password=••••••");
+      expect(allOutput).not.toContain("secret");
+    });
   });
 
   describe("reset subcommand", () => {
@@ -307,6 +355,28 @@ describe("registerConfigCommand", () => {
       expect(mockLoggerSuccess).toHaveBeenCalledWith(
         expect.stringContaining("local_prod"),
       );
+    });
+
+    it("includes engine, user, and password when provided as global options", async () => {
+      const { program } = buildFakeProgram({
+        engine: "mysql",
+        user: "admin",
+        password: "secret",
+      });
+      registerConfigCmd(program as any);
+      await program.invokeAction("add-server", "prod");
+
+      expect(mockAddServer).toHaveBeenCalledWith("prod", {
+        engine: "mysql",
+        user: "admin",
+        password: "secret",
+      });
+
+      const lineCall = mockLoggerLine.mock.calls.flat().join("\n");
+      expect(lineCall).toContain("engine=mysql");
+      expect(lineCall).toContain("user=admin");
+      expect(lineCall).toContain("password=••••••");
+      expect(lineCall).not.toContain("secret");
     });
   });
 

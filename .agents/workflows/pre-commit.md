@@ -26,8 +26,9 @@ Before executing any `git commit` or pushing branches, **you MUST follow this st
 
 ## 4. Pull Request Preparation
 
-- When creating or preparing a PR, you MUST use the project's PULL REQUEST TEMPLATE.
-- Review `.github/PULL_REQUEST_TEMPLATE.md` and fill out ALL fields, checking the appropriate boxes (`[x]`).
+- When creating a PR, you MUST use the project's pull request template exactly as written in `.github/PULL_REQUEST_TEMPLATE.md`.
+- Do NOT invent a custom format. Fill out ALL fields, checking the appropriate boxes (`[x]`).
+- Review the template before writing the PR body.
 
 ## 5. Architectural Integrity
 
@@ -35,7 +36,15 @@ Before executing any `git commit` or pushing branches, **you MUST follow this st
 - Verify your changes align with the vision set in `docs/VISION.md`.
 - Ask yourself: "Is there anything else needed in the project before this PR is fully complete?"
 
+## 6. Writing Style Rules
+
+- **NO em dashes**: Never use the `—` character in commits, PR titles, PR descriptions, or any documentation.
+  - Wrong: `feat: add backup command — supports custom and plain formats`
+  - Correct: `feat: add backup command with support for custom and plain formats`
+- **NO emojis**: This is a professional CLI tool. Do not use emojis in code, commits, PR descriptions, or technical documentation (README, AGENTS.md, workflow files).
+  - Emojis in user-facing output (e.g., `✔`, `✖`, `⚠`) are acceptable when they serve as UI indicators, not decoration.
+
 ## Execution
 
-Once you have explicitly verified the 5 steps above, you may proceed with:
+Once you have explicitly verified the 6 steps above, you may proceed with:
 `git add ... && git commit -m "..." && git push`
