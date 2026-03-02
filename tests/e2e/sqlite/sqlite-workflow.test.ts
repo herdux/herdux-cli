@@ -122,6 +122,18 @@ describe("E2E: SQLite Full Workflow", () => {
     });
   });
 
+  // ─── Inspect (.db backup) ───
+
+  describe("inspect (.db backup)", () => {
+    it("should inspect the .db backup file without a live connection", async () => {
+      const result = await runCli("inspect", customBackupPath);
+
+      expect(result.exitCode).toBe(0);
+      // A freshly created SQLite DB has no user tables, so .schema returns the empty message
+      expect(result.output).toContain("empty database");
+    });
+  });
+
   // ─── Backup (plain format) ───
 
   describe("backup (plain format)", () => {
@@ -142,6 +154,18 @@ describe("E2E: SQLite Full Workflow", () => {
       expect(match).not.toBeNull();
       plainBackupPath = match![1].trim();
       expect(existsSync(plainBackupPath)).toBe(true);
+    });
+  });
+
+  // ─── Inspect (.sql backup) ───
+
+  describe("inspect (.sql backup)", () => {
+    it("should inspect the .sql backup file without a live connection", async () => {
+      const result = await runCli("inspect", plainBackupPath);
+
+      expect(result.exitCode).toBe(0);
+      // A freshly created SQLite DB has no user tables, so the .sql dump has no CREATE statements
+      expect(result.output).toContain("no CREATE statements found");
     });
   });
 

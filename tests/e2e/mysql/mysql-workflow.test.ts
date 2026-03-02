@@ -126,6 +126,36 @@ describe("E2E: MySQL Full Workflow", () => {
     });
   });
 
+  // ─── Inspect (.sql backup) ───
+
+  describe("inspect (.sql backup)", () => {
+    it("should inspect the .sql backup file without a live connection", async () => {
+      const result = await runCli("inspect", sqlBackupPath);
+
+      expect(result.exitCode).toBe(0);
+      // A freshly created MySQL DB has no user tables, so the .sql dump has no CREATE TABLE
+      expect(result.output).toContain("no CREATE statements found");
+    });
+  });
+
+  // ─── Backup: reject custom format ───
+
+  describe("backup --format custom (rejected)", () => {
+    it("should fail with a clear error when --format custom is used with MySQL", async () => {
+      const result = await runCli(
+        "backup",
+        TEST_DB,
+        "--format",
+        "custom",
+        "--output",
+        BACKUP_DIR,
+      );
+
+      expect(result.exitCode).toBe(1);
+      expect(result.output).toContain('does not support "custom" format');
+    });
+  });
+
   // ─── Drop ───
 
   describe("drop", () => {
