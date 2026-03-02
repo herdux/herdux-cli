@@ -155,6 +155,8 @@ describe.each(engines)(
       mockCheckBackupRequirements.mockResolvedValue(undefined);
       mockBackupDatabase.mockResolvedValue("/output/path/backup.dump");
       mockDropDatabase.mockResolvedValue(undefined);
+      // Reset config default so tests that call mockReturnValue({}) don't bleed into others.
+      mockConfigGetDefault.mockReturnValue({ output: "/default/backup/dir" });
       // Safe default: if a test triggers prompts without configuring the mock,
       // it returns { confirmDrop: false } instead of undefined — prevents silent failures.
       mockPromptsConfirm.mockResolvedValue({ confirmDrop: false });
@@ -298,6 +300,29 @@ describe.each(engines)(
       );
       expect(processExitSpy).toHaveBeenCalledWith(1);
       expect(mockBackupDatabase).not.toHaveBeenCalled();
+    });
+
+    it("uses the homedir fallback when config has no output directory", async () => {
+      mockConfigGetDefault.mockReturnValue({});
+      const { program } = buildFakeProgram();
+      registerBackupCmd(program as any);
+      await program.invokeAction("testdb", { format: "custom" });
+
+      const callArgs = mockBackupDatabase.mock.calls[0] as unknown[];
+      const usedDir = callArgs[1] as string;
+      expect(usedDir).toMatch(/\.herdux[/\\]backups$/);
+    });
+
+    it("catches non-Error thrown values from backupDatabase", async () => {
+      mockBackupDatabase.mockRejectedValue("raw string error");
+      const { program } = buildFakeProgram();
+      registerBackupCmd(program as any);
+      await program.invokeAction("testdb", { format: "custom" });
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("raw string error"),
+      );
+      expect(processExitSpy).toHaveBeenCalledWith(1);
     });
 
     it("successfully generates a backup in plain format", async () => {
