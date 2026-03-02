@@ -2,6 +2,7 @@ import type { Command } from "commander";
 import chalk from "chalk";
 import ora from "ora";
 import { resolveEngineAndConnection } from "../infra/engines/resolve-connection.js";
+import { logger } from "../presentation/logger.js";
 
 export function registerVersionCommand(program: Command): void {
   program
@@ -22,33 +23,47 @@ Examples:
         const rawOpts = program.opts();
         const { engine, opts } = await resolveEngineAndConnection(rawOpts);
         const clientVersion = await engine.checkClientVersion();
-        console.log(
-          chalk.bold.cyan(`\n--- ${engine.getEngineName()} Client ---`),
-        );
-        console.log(`   ${clientVersion}`);
 
-        const spinner = ora(
-          `Scanning for running ${engine.getEngineName()} servers...`,
-        ).start();
-        const instances = await engine.discoverInstances(opts);
+        logger.title(`${engine.getEngineName()} Client`);
+        logger.line(clientVersion);
+        logger.blank();
 
-        if (instances.length === 0) {
-          spinner.warn(`No running ${engine.getEngineName()} servers found`);
-          console.log(chalk.yellow("   No servers detected on common ports."));
-          console.log(chalk.gray("   Use --port to specify a custom port.\n"));
+        const isPortless = !engine.getDefaultConnectionOptions().port;
+
+        if (isPortless) {
+          logger.info(
+            `${engine.getEngineName()} is file-based. No server instances to scan.`,
+          );
+          logger.blank();
         } else {
-          spinner.succeed(`Found ${instances.length} running server(s)\n`);
+          const spinner = ora(
+            `Scanning for running ${engine.getEngineName()} servers...`,
+          ).start();
+          const instances = await engine.discoverInstances(opts);
 
-          console.log(chalk.bold.cyan("--- Running Servers ---"));
-          for (const instance of instances) {
-            const portBadge = chalk.bgGreen.black(` :${instance.port} `);
-            console.log(`   ${portBadge} ${instance.version}`);
+          if (instances.length === 0) {
+            spinner.warn(`No running ${engine.getEngineName()} servers found`);
+            console.log(
+              chalk.yellow("   No servers detected on common ports."),
+            );
+            console.log(
+              chalk.gray("   Use --port to specify a custom port.\n"),
+            );
+          } else {
+            spinner.succeed(`Found ${instances.length} running server(s)\n`);
+
+            logger.title("Running Servers");
+            for (const instance of instances) {
+              const portBadge = chalk.bgGreen.black(` :${instance.port} `);
+              logger.line(`${portBadge} ${instance.version}`);
+            }
+            logger.blank();
           }
-          console.log();
         }
 
-        console.log(chalk.bold.cyan("--- Herdux CLI ---"));
-        console.log(`   v${program.version()}\n`);
+        logger.title("Herdux CLI");
+        logger.line(`v${program.version()}`);
+        logger.blank();
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         console.error(chalk.red(`\n✖ ${message}\n`));

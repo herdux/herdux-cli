@@ -147,8 +147,11 @@ describe.each(engines)(
         "testdb",
         expect.any(Object),
       );
+      const connLabel = defaultOpts.port
+        ? `${defaultOpts.host}:${defaultOpts.port}`
+        : (defaultOpts.host ?? "localhost");
       expect(mockSpinnerSucceed).toHaveBeenLastCalledWith(
-        'Database "testdb" created successfully\n',
+        `Database "testdb" created (${engineName} at ${connLabel})\n`,
       );
     });
 

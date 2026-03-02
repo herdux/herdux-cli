@@ -38,7 +38,12 @@ Examples:
           ...opts,
           includeSize: options.size,
         });
-        spinner.succeed(`Found ${databases.length} database(s)\n`);
+
+        const host = opts.host ?? "localhost";
+        const connLabel = opts.port ? `${host}:${opts.port}` : host;
+        spinner.succeed(
+          `Found ${databases.length} database(s) on ${engine.getEngineName()} (${connLabel})\n`,
+        );
 
         if (databases.length === 0) {
           console.log(chalk.yellow("  No databases found.\n"));

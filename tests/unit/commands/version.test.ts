@@ -6,11 +6,14 @@ import { engines } from "../helpers/engines.js";
 
 const mockCheckClientVersion = jest.fn<() => Promise<string>>();
 const mockDiscoverInstances = jest.fn<() => Promise<DatabaseInstance[]>>();
+const mockGetDefaultConnectionOptions =
+  jest.fn<() => { host?: string; port?: string; user?: string }>();
 
 const mockEngine = {
   checkClientVersion: mockCheckClientVersion,
   discoverInstances: mockDiscoverInstances,
   getEngineName: jest.fn<() => string>(),
+  getDefaultConnectionOptions: mockGetDefaultConnectionOptions,
 };
 
 jest.unstable_mockModule(
@@ -49,6 +52,7 @@ jest.unstable_mockModule("chalk", () => ({
   default: {
     bold: chalkFn,
     bgGreen: chalkFn,
+    blue: (s: string) => s,
     cyan: (s: string) => s,
     gray: (s: string) => s,
     yellow: (s: string) => s,
@@ -125,6 +129,7 @@ describe.each(engines)(
     beforeEach(() => {
       jest.clearAllMocks();
       mockEngine.getEngineName.mockReturnValue(engineName);
+      mockEngine.getDefaultConnectionOptions.mockReturnValue(defaultOpts);
       mockResolveEngineAndConnection.mockResolvedValue({
         engine: mockEngine,
         engineType,
@@ -149,6 +154,9 @@ describe.each(engines)(
     });
 
     it("prints client version and lists running instances", async () => {
+      // Discovery only happens for server engines (postgres, mysql) — skip for SQLite
+      if (!defaultOpts.port) return;
+
       mockDiscoverInstances.mockResolvedValue([
         { port: "5432", version: "15.4", status: "running" },
         { port: "5433", version: "14.8", status: "running" },
@@ -180,6 +188,9 @@ describe.each(engines)(
     });
 
     it("displays warning when no instances are discovered", async () => {
+      // Discovery only happens for server engines (postgres, mysql) — skip for SQLite
+      if (!defaultOpts.port) return;
+
       mockDiscoverInstances.mockResolvedValue([]);
 
       const { program } = buildFakeProgram();
@@ -191,6 +202,23 @@ describe.each(engines)(
       );
       expect(consoleLogSpy).toHaveBeenCalledWith(
         expect.stringContaining("No servers detected on common ports"),
+      );
+    });
+
+    it("skips discovery and shows file-based message for portless engines", async () => {
+      // Only runs for SQLite (no port in defaultOpts)
+      if (defaultOpts.port) return;
+
+      const { program } = buildFakeProgram();
+      registerVersionCmd(program as any);
+      await program.invokeAction();
+
+      expect(mockCheckClientVersion).toHaveBeenCalled();
+      expect(mockDiscoverInstances).not.toHaveBeenCalled();
+      // logger.info() calls console.log(icon, message) — check the second argument
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.stringContaining("is file-based"),
       );
     });
 
