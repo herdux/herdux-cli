@@ -107,3 +107,30 @@ jobs:
       - name: Teardown Database
         if: always()
         run: npm run test:e2e:mysql:down
+
+  e2e-sqlite:
+    name: E2E Tests (SQLite)
+    runs-on: ubuntu-latest
+    needs: lint-and-test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js 20.x
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20.x
+          cache: "npm"
+
+      - name: Install dependencies & Build
+        run: |
+          npm ci
+          npm run build
+          npm link
+
+      - name: Install SQLite
+        run: sudo apt-get update && sudo apt-get install -y sqlite3
+
+      - name: Run E2E Tests for SQLite
+        run: npm run test:e2e:sqlite

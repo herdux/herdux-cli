@@ -53,4 +53,45 @@ describe("CLI Integration: hdx list", () => {
     expect(result.stdout).toContain("pgsql-local");
     expect(result.stdout).toContain("mysql-local");
   });
+
+  it("should not show the interactive prompt when --engine sqlite is passed", async () => {
+    runner.mockConfig({
+      servers: {
+        "pgsql-local": { engine: "postgres", port: "5432" },
+        "mysql-local": { engine: "mysql", port: "3306" },
+      },
+    });
+
+    const result = await runner.run(["list", "--engine", "sqlite"]);
+
+    // SQLite is file-based and has no server instances to select from.
+    // The interactive selection prompt must not appear.
+    expect(result.stdout).not.toContain("Select a connection to use:");
+    expect(result.stdout).not.toContain("pgsql-local");
+    expect(result.stdout).not.toContain("mysql-local");
+  });
+
+  it("should auto-select when filtering by engine yields exactly one SQLite server", async () => {
+    runner.mockConfig({
+      servers: {
+        "pgsql-local": { engine: "postgres", port: "5432" },
+        "sqlite-local": { engine: "sqlite", host: "/tmp/herdux-test" },
+      },
+    });
+
+    const result = await runner.run(["list", "--engine", "sqlite"]);
+
+    expect(result.stdout).toContain("Auto-selected connection: › sqlite-local");
+    expect(result.stdout).not.toContain("Select a connection to use:");
+  });
+
+  it("should reject an unknown engine and list all valid engines including sqlite", async () => {
+    const result = await runner.run(["list", "--engine", "badengine"]);
+
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain("Unknown engine");
+    expect(result.stderr).toContain("postgres");
+    expect(result.stderr).toContain("mysql");
+    expect(result.stderr).toContain("sqlite");
+  });
 });

@@ -5,9 +5,9 @@
  * All command test suites pick this up automatically via describe.each(engines).
  */
 export type EngineConfig = {
-  engineType: "postgres" | "mysql";
+  engineType: "postgres" | "mysql" | "sqlite";
   engineName: string;
-  defaultOpts: { host: string; port: string; user: string };
+  defaultOpts: { host: string; port?: string; user?: string };
   clientVersionStr: string;
 };
 
@@ -23,5 +23,11 @@ export const engines: EngineConfig[] = [
     engineName: "MySQL",
     defaultOpts: { host: "localhost", port: "3306", user: "root" },
     clientVersionStr: "mysql  Ver 8.0.33 Distrib 8.0.33, for Linux (x86_64)",
+  },
+  {
+    engineType: "sqlite",
+    engineName: "SQLite",
+    defaultOpts: { host: "/tmp/herdux-test-sqlite" },
+    clientVersionStr: "3.42.0 2023-05-16 12:36:15",
   },
 ];
