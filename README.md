@@ -12,11 +12,12 @@
 
 A fast, interactive CLI that removes friction from daily local database workflows, especially when juggling multiple instances and large datasets.
 
-![Version](https://img.shields.io/badge/version-0.4.3-blue.svg)
+![Version](https://img.shields.io/badge/version-0.5.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Node](https://img.shields.io/badge/node-18%2B-43853d.svg)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=flat&logo=postgresql&logoColor=white)
 ![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=flat&logo=mysql&logoColor=white)
+![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat&logo=sqlite&logoColor=white)
 [![GitHub Sponsors](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?style=flat&logo=github)](https://github.com/sponsors/eduardozaniboni)
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy_Me_A_Coffee-FFDD00?style=flat&logo=buy-me-a-coffee&logoColor=black)](https://www.buymeacoffee.com/eduardozaniboni)
 
@@ -48,6 +49,7 @@ That's it. You're managing databases.
 | ---------- | ------ | ------------------------------- |
 | PostgreSQL | ✅     | `psql`, `pg_dump`, `pg_restore` |
 | MySQL      | ✅     | `mysql`, `mysqldump`            |
+| SQLite     | ✅     | `sqlite3`                       |
 
 Herdux resolves the engine explicitly using a strict priority order (CLI flags → profiles → saved defaults → fallback).
 
@@ -61,6 +63,10 @@ herdux create mydb
 # MySQL
 herdux --engine mysql list
 herdux --engine mysql create mydb
+
+# SQLite (file-based, no server required)
+herdux --engine sqlite list
+herdux --engine sqlite create mydb
 
 # Or save it in a profile and forget about it
 herdux config add mysql-local --port 3306 --user root --password secret --engine mysql
@@ -134,7 +140,7 @@ It is specifically designed for developers who:
 - Need safe backup & restore workflows that don't rely on fragile bash scripts.
 - Prefer terminal-first tooling.
 - Want predictable connection resolution without hidden magic.
-- Work with **multiple database engines** (PostgreSQL, MySQL) and want a unified interface.
+- Work with **multiple database engines** (PostgreSQL, MySQL, SQLite) and want a unified interface.
 
 If you manage databases locally, Herdux was created to solve your pain.
 
@@ -142,7 +148,7 @@ If you manage databases locally, Herdux was created to solve your pain.
 
 ## 🚀 Key Features
 
-- **🔌 Multi-Engine Support** — First-class support for PostgreSQL and MySQL. Same commands, same workflow, any engine.
+- **🔌 Multi-Engine Support** — First-class support for PostgreSQL, MySQL, and SQLite. Same commands, same workflow, any engine.
 - **📋 Smart Listing** — Optimized listing strategy for massive clusters. Optional `--size` flag for disk usage analysis, sorted largest-first.
 - **💾 Intelligent Backup & Restore** — Supports Custom (`.dump`) and Plain (`.sql`) formats. Auto-detects the right tool for restores.
 - **🧹 Bulk Cleanup** — Multi-select databases, optionally backup, and batch-drop them. Reclaim disk space instantly.
@@ -183,6 +189,7 @@ If you manage databases locally, Herdux was created to solve your pain.
 - **Node.js** 18 or higher
 - **For PostgreSQL:** `psql`, `pg_dump`, `pg_restore` installed and available in your `PATH`
 - **For MySQL:** `mysql`, `mysqldump` installed and available in your `PATH`
+- **For SQLite:** `sqlite3` installed and available in your `PATH`
 
 > [!TIP]
 > Run `herdux doctor` after installation to verify everything is set up correctly. The doctor command checks the tools for the active engine.
@@ -213,7 +220,7 @@ npm link
 
 ## 🛠️ Commands
 
-All commands work with both PostgreSQL and MySQL. Use `--engine mysql` or configure engine in your server profile.
+All commands work with PostgreSQL, MySQL, and SQLite. Use `--engine mysql` or `--engine sqlite`, or configure the engine in your server profile.
 
 ### `herdux version`
 

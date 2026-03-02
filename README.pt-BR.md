@@ -12,11 +12,12 @@
 
 Uma CLI rápida e interativa que remove a fricção dos workflows diários com bancos de dados locais, especialmente ao lidar com múltiplas instâncias e grandes datasets.
 
-![Version](https://img.shields.io/badge/version-0.4.3-blue.svg)
+![Version](https://img.shields.io/badge/version-0.5.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Node](https://img.shields.io/badge/node-18%2B-43853d.svg)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=flat&logo=postgresql&logoColor=white)
 ![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=flat&logo=mysql&logoColor=white)
+![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat&logo=sqlite&logoColor=white)
 [![GitHub Sponsors](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?style=flat&logo=github)](https://github.com/sponsors/eduardozaniboni)
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy_Me_A_Coffee-FFDD00?style=flat&logo=buy-me-a-coffee&logoColor=black)](https://www.buymeacoffee.com/eduardozaniboni)
 
@@ -48,6 +49,7 @@ herdux list
 | ---------- | ------ | ------------------------------- |
 | PostgreSQL | ✅     | `psql`, `pg_dump`, `pg_restore` |
 | MySQL      | ✅     | `mysql`, `mysqldump`            |
+| SQLite     | ✅     | `sqlite3`                       |
 
 O Herdux detecta automaticamente a engine a partir do seu perfil de servidor ou da flag `--engine`. PostgreSQL é o padrão quando nenhuma engine é especificada.
 
@@ -59,6 +61,10 @@ herdux create mydb
 # MySQL
 herdux --engine mysql list
 herdux --engine mysql create mydb
+
+# SQLite (baseado em arquivos, sem servidor)
+herdux --engine sqlite list
+herdux --engine sqlite create mydb
 
 # Ou salve no perfil e esqueça
 herdux config add mysql-local --port 3306 --user root --password secret --engine mysql
@@ -110,7 +116,7 @@ Ele é especificamente projetado para desenvolvedores que:
 - Precisam de fluxos seguros de backup & restore que não dependam de scripts bash frágeis.
 - Preferem ferramentas focadas no terminal (terminal-first).
 - Querem resolução previsível de conexões sem mágicas ocultas.
-- Trabalham com **múltiplas engines de banco de dados** (PostgreSQL, MySQL) e querem uma interface unificada.
+- Trabalham com **múltiplas engines de banco de dados** (PostgreSQL, MySQL, SQLite) e querem uma interface unificada.
 
 Se você gerencia bancos de dados localmente e compartilha dessa dor, o Herdux foi criado para você.
 
@@ -118,7 +124,7 @@ Se você gerencia bancos de dados localmente e compartilha dessa dor, o Herdux f
 
 ## 🚀 Funcionalidades Principais
 
-- **🔌 Suporte Multi-Engine** — Suporte de primeira classe para PostgreSQL e MySQL. Mesmos comandos, mesmo workflow, qualquer engine.
+- **🔌 Suporte Multi-Engine** — Suporte de primeira classe para PostgreSQL, MySQL e SQLite. Mesmos comandos, mesmo workflow, qualquer engine.
 - **📋 Listagem Inteligente** — Estratégia otimizada para clusters massivos. Flag opcional `--size` para análise de uso de disco, ordenado do maior para o menor.
 - **💾 Backup & Restore Inteligente** — Suporta formatos Custom (`.dump`) e Plain (`.sql`). Detecta automaticamente a ferramenta correta para restauração.
 - **🧹 Limpeza em Massa** — Multi-seleção de bancos, backup opcional e batch-drop. Recupere espaço em disco instantaneamente.
@@ -159,6 +165,7 @@ O **Herdux** trata operações destrutivas com cuidado:
 - **Node.js** 18 ou superior
 - **Para PostgreSQL:** `psql`, `pg_dump`, `pg_restore` instalados e disponíveis no `PATH`
 - **Para MySQL:** `mysql`, `mysqldump` instalados e disponíveis no `PATH`
+- **Para SQLite:** `sqlite3` instalado e disponível no `PATH`
 
 > [!TIP]
 > Execute `herdux doctor` após a instalação para verificar se tudo está configurado corretamente. O comando doctor verifica as ferramentas da engine ativa.
@@ -189,7 +196,7 @@ npm link
 
 ## 🛠️ Comandos
 
-Todos os comandos funcionam tanto com PostgreSQL quanto com MySQL. Use `--engine mysql` ou configure a engine no seu perfil de servidor.
+Todos os comandos funcionam com PostgreSQL, MySQL e SQLite. Use `--engine mysql` ou `--engine sqlite`, ou configure a engine no seu perfil de servidor.
 
 ### `herdux version`
 
