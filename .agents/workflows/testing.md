@@ -28,6 +28,9 @@ npm run test:integration   # Integration tests only
 npm run test:e2e:pgsql     # E2E tests for PostgreSQL (needs Docker)
 npm run test:e2e:mysql     # E2E tests for MySQL (needs Docker)
 npm run test:e2e           # All E2E tests
+
+# Run with branch coverage report
+npm run test:unit -- --coverage
 ```
 
 ---
@@ -74,6 +77,31 @@ jest.unstable_mockModule("ora", () => ({
 const { registerMyCommand } = await import("../../src/commands/my-command.js");
 ```
 
+### Multi-engine parametrization (mandatory for command tests)
+
+Every command test MUST be parametrized over all supported engines using `describe.each` and the shared `engines` helper.
+
+```typescript
+import { engines } from "../helpers/engines.js";
+
+describe.each(engines)(
+  "registerMyCommand ($engineName)",
+  ({ engineType, engineName, defaultOpts }) => {
+    beforeEach(() => {
+      mockResolveEngineAndConnection.mockResolvedValue({
+        engine: mockEngine,
+        engineType,
+        opts: defaultOpts,
+      });
+    });
+
+    it("does something", async () => { ... });
+  },
+);
+```
+
+**When adding a new engine**, update `tests/unit/helpers/engines.ts` to include the new entry. All command tests will automatically run against it.
+
 ### Standard mock engine structure
 
 ```typescript
@@ -93,6 +121,23 @@ const mockEngine = {
 };
 ```
 
+### Standard command mock structure
+
+Every command builder method used in the chain MUST be present in the mock. Missing methods cause silent test failures.
+
+```typescript
+const command = {
+  alias: jest.fn().mockReturnThis(),
+  description: jest.fn().mockReturnThis(),
+  addHelpText: jest.fn().mockReturnThis(), // required since Phase 3
+  option: jest.fn().mockReturnThis(),
+  action(fn: ActionFn) {
+    capturedAction = fn;
+    return this;
+  },
+};
+```
+
 ### Process.exit and console spies
 
 ```typescript
@@ -100,7 +145,7 @@ let exitSpy: jest.SpiedFunction<typeof process.exit>;
 
 beforeAll(() => {
   exitSpy = jest.spyOn(process, "exit").mockImplementation(() => {
-    throw new Error("process.exit called");
+    throw new Error("PROCESS_EXIT_MOCK");
   });
   jest.spyOn(console, "log").mockImplementation(() => {});
   jest.spyOn(console, "error").mockImplementation(() => {});
@@ -116,15 +161,75 @@ beforeEach(() => {
 });
 ```
 
-### Coverage requirements
+---
 
-Every new command or engine method must have tests covering:
+## Coverage Requirements
 
-- Happy path (success)
-- Engine throws an Error
-- Engine throws a non-Error value (string, object)
-- Missing binary / checkClientVersion fails
-- Invalid user input (when applicable)
+### Thresholds (enforced in jest.config.js)
+
+```
+statements:  95%
+functions:   95%
+lines:       95%
+branches:    90%
+```
+
+Branch coverage is the hardest to achieve. Pay special attention to conditional paths.
+
+### Mandatory cases for every command
+
+| Case                       | Description                                                            |
+| -------------------------- | ---------------------------------------------------------------------- |
+| Happy path                 | Successful execution end-to-end                                        |
+| Engine throws `Error`      | `mockEngine.someMethod.mockRejectedValue(new Error("msg"))`            |
+| Engine throws non-Error    | `mockEngine.someMethod.mockRejectedValue("raw string error")`          |
+| `checkClientVersion` fails | Binary not found or version check error                                |
+| Invalid user input         | When the command validates arguments (name, format, etc.)              |
+| Outer catch triggered      | Make `resolveEngineAndConnection` throw to cover the outer `try/catch` |
+
+### Covering the OR-fallback branch
+
+Many commands have patterns like:
+
+```typescript
+const dir =
+  cmdOpts.output ||
+  configDefaults.output ||
+  join(homedir(), ".herdux", "backups");
+```
+
+Each `||` creates two branches. You MUST test both sides:
+
+```typescript
+// Branch 1: configDefaults.output IS set (left side taken)
+mockConfigGetDefault.mockReturnValue({ output: "/custom/dir" });
+
+// Branch 2: configDefaults.output is NOT set (right side taken)
+mockConfigGetDefault.mockReturnValue({});
+```
+
+### Covering the non-Error branch in catch blocks
+
+Every `catch` block that uses `err instanceof Error ? err.message : String(err)` has two branches. Test both:
+
+```typescript
+// Branch 1: Error instance
+mockEngine.someMethod.mockRejectedValue(new Error("connection lost"));
+
+// Branch 2: non-Error value (string, plain object, etc.)
+mockEngine.someMethod.mockRejectedValue("raw string error");
+```
+
+### Covering nullish coalescing
+
+Patterns like `db.owner ?? ""` require tests where the value is `undefined` or `null`:
+
+```typescript
+mockListDatabases.mockResolvedValue([
+  { name: "db1" }, // owner and encoding are undefined
+  { name: "db2", owner: null, encoding: null },
+]);
+```
 
 ---
 
@@ -218,3 +323,5 @@ If you change any engine method or command, run the corresponding E2E tests. Uni
 - Do not skip E2E tests when modifying engine behavior
 - Do not set E2E timeout below 120s
 - Do not write tests that depend on execution order within a `describe` block (except E2E workflows by design)
+- Do not omit `addHelpText: jest.fn().mockReturnThis()` from command mocks
+- Do not leave OR-fallback branches or non-Error catch branches uncovered
