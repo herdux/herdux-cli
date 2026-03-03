@@ -6,7 +6,7 @@ import { execa } from "execa";
  * Inspects the contents of a database backup file without a live connection.
  *
  * Supported formats:
- *   .dump          PostgreSQL custom format — pg_restore --list
+ *   .dump / .tar   PostgreSQL dump formats — pg_restore --list
  *   .sql           Plain SQL (any engine)  — extracts CREATE statements
  *   .db / .sqlite  SQLite database file    — sqlite3 .schema
  *
@@ -22,7 +22,7 @@ export async function inspectBackupFile(filePath: string): Promise<string> {
 
   const ext = extname(resolvedPath).toLowerCase();
 
-  if (ext === ".dump") {
+  if (ext === ".dump" || ext === ".tar") {
     return inspectPostgresDump(resolvedPath);
   }
 
@@ -35,7 +35,7 @@ export async function inspectBackupFile(filePath: string): Promise<string> {
   }
 
   throw new Error(
-    `Unsupported file type "${ext}". Supported extensions: .dump (PostgreSQL), .sql (any engine), .db / .sqlite (SQLite)`,
+    `Unsupported file type "${ext}". Supported extensions: .dump / .tar (PostgreSQL), .sql (any engine), .db / .sqlite (SQLite)`,
   );
 }
 
