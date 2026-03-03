@@ -12,7 +12,7 @@
 
 A fast, interactive CLI that removes friction from daily local database workflows, especially when juggling multiple instances and large datasets.
 
-![Version](https://img.shields.io/badge/version-0.5.0-blue.svg)
+![Version](https://img.shields.io/badge/version-0.6.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Node](https://img.shields.io/badge/node-18%2B-43853d.svg)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=flat&logo=postgresql&logoColor=white)
@@ -221,6 +221,24 @@ The target database is automatically created if it does not exist.
 
 > [!NOTE]
 > When restoring dumps from managed environments (e.g. AWS RDS), Herdux configures the restore tool to ignore ownership and role assignments, preventing errors from missing production roles.
+
+---
+
+### `herdux inspect <file>`
+
+Inspects the contents of a backup file without connecting to a database. Completely offline.
+
+| Extension         | Output                                                                 |
+| ----------------- | ---------------------------------------------------------------------- |
+| `.dump`           | PostgreSQL custom format: full Table of Contents (`pg_restore --list`) |
+| `.sql`            | Plain SQL (any engine): CREATE TABLE, VIEW, INDEX, SEQUENCE statements |
+| `.db` / `.sqlite` | SQLite database file: schema (`sqlite3 .schema`)                       |
+
+```bash
+hdx inspect backup.dump           # Table of Contents of a PostgreSQL custom dump
+hdx inspect export.sql            # CREATE statements extracted from plain SQL
+hdx inspect mydb.db               # SQLite schema
+```
 
 ---
 

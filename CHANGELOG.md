@@ -6,6 +6,18 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and 
 
 ---
 
+## [0.6.0] - 2026-03-02
+
+### Added
+
+- `hdx inspect <file>` command: inspects the contents of a backup file without connecting to a database. Supports `.dump` (PostgreSQL custom, via `pg_restore --list`), `.sql` (any engine, extracts CREATE statements), and `.db` / `.sqlite` (SQLite, via `sqlite3 .schema`). Completely offline.
+
+### Fixed
+
+- MySQL engine now rejects `--format custom` with a clear error message. Previously, passing `--format custom` for a MySQL backup was silently ignored and produced a plain SQL file regardless. MySQL only supports plain SQL format via `mysqldump`.
+
+---
+
 ## [0.5.0] - 2026-03-02
 
 ### Added

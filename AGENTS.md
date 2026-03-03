@@ -217,7 +217,7 @@ For patterns, mocking conventions, and detailed standards, read `.agents/workflo
 ### E2E Tests (SOURCE OF TRUTH)
 
 - Run against real databases via Docker
-- One full workflow per DBMS: `create → list → backup → drop → restore`
+- One full workflow per DBMS: `create → list → backup → inspect → drop → restore`
 - **ALWAYS** run E2E tests when changing commands or engines
 - **NEVER** assume unit tests are sufficient
 - If E2E fails, the code is wrong
@@ -251,6 +251,8 @@ Summary:
 - Call `checkClientVersion()` before any engine operation
 - Use only `IDatabaseEngine` methods — never touch binaries or config directly
 - Write unit tests and add to E2E workflows
+
+**Exception — offline commands:** Commands that operate on local files without a live database connection (e.g., `inspect`) do NOT call `resolveEngineAndConnection()` or `checkClientVersion()`. They may use `src/infra/engines/` helpers directly, but must still keep all binary calls inside `infra/`.
 
 ---
 
