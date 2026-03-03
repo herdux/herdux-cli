@@ -12,7 +12,7 @@
 
 A fast, interactive CLI that removes friction from daily local database workflows, especially when juggling multiple instances and large datasets.
 
-![Version](https://img.shields.io/badge/version-0.7.0-blue.svg)
+![Version](https://img.shields.io/badge/version-0.8.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Node](https://img.shields.io/badge/node-18%2B-43853d.svg)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=flat&logo=postgresql&logoColor=white)
@@ -254,6 +254,44 @@ hdx docker list --all       # Include stopped containers
 hdx docker start pg-dev     # Start a stopped container
 hdx docker stop pg-dev      # Stop a running container
 hdx docker stop pg-dev --remove   # Stop and remove the container
+```
+
+---
+
+### `herdux cloud`
+
+Manages backup files in S3-compatible cloud storage (AWS S3, Cloudflare R2, MinIO, DigitalOcean Spaces, and others).
+
+```bash
+# Configure
+hdx cloud config bucket my-bucket
+hdx cloud config region us-east-1
+hdx cloud config access-key AKIAIO...
+hdx cloud config secret-key wJalrX...
+hdx cloud config endpoint https://account.r2.cloudflarestorage.com  # optional, for non-AWS providers
+
+# Manage backups in the bucket
+hdx cloud list                            # List all backup files in the bucket
+hdx cloud list --prefix backups/mydb/    # Filter by key prefix
+hdx cloud download backups/mydb_2026-03-03.dump
+hdx cloud download backups/mydb_2026-03-03.dump -o /tmp/
+hdx cloud delete backups/mydb_2026-03-03.dump   # Asks for confirmation
+hdx cloud delete backups/mydb_2026-03-03.dump --yes
+
+# Backup directly to S3
+hdx backup mydb --upload backups/         # Backup and upload to prefix backups/
+hdx backup mydb --upload                  # Backup and upload to bucket root
+
+# Restore directly from S3
+hdx restore s3://my-bucket/backups/mydb_2026-03-03.dump --db mydb
+```
+
+Credentials can also be provided via env vars (recommended for CI/production):
+
+```bash
+export AWS_ACCESS_KEY_ID=AKIAIO...
+export AWS_SECRET_ACCESS_KEY=wJalrX...
+export AWS_DEFAULT_REGION=us-east-1
 ```
 
 ---

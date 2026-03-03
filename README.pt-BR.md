@@ -12,7 +12,7 @@
 
 Uma CLI rápida e interativa que remove a fricção dos workflows diários com bancos de dados locais, especialmente ao lidar com múltiplas instâncias e grandes datasets.
 
-![Version](https://img.shields.io/badge/version-0.7.0-blue.svg)
+![Version](https://img.shields.io/badge/version-0.8.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Node](https://img.shields.io/badge/node-18%2B-43853d.svg)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=flat&logo=postgresql&logoColor=white)
@@ -254,6 +254,44 @@ hdx docker list --all       # Inclui containers parados
 hdx docker start pg-dev     # Inicia um container parado
 hdx docker stop pg-dev      # Para um container em execucao
 hdx docker stop pg-dev --remove   # Para e remove o container
+```
+
+---
+
+### `herdux cloud`
+
+Gerencia arquivos de backup em cloud storage S3-compatible (AWS S3, Cloudflare R2, MinIO, DigitalOcean Spaces e outros).
+
+```bash
+# Configurar
+hdx cloud config bucket meu-bucket
+hdx cloud config region us-east-1
+hdx cloud config access-key AKIAIO...
+hdx cloud config secret-key wJalrX...
+hdx cloud config endpoint https://account.r2.cloudflarestorage.com  # opcional, para provedores nao-AWS
+
+# Gerenciar backups no bucket
+hdx cloud list                            # Lista todos os arquivos de backup no bucket
+hdx cloud list --prefix backups/mydb/    # Filtra por prefixo
+hdx cloud download backups/mydb_2026-03-03.dump
+hdx cloud download backups/mydb_2026-03-03.dump -o /tmp/
+hdx cloud delete backups/mydb_2026-03-03.dump   # Pede confirmacao
+hdx cloud delete backups/mydb_2026-03-03.dump --yes
+
+# Backup direto para o S3
+hdx backup mydb --upload backups/         # Backup e upload para o prefixo backups/
+hdx backup mydb --upload                  # Backup e upload para a raiz do bucket
+
+# Restore direto do S3
+hdx restore s3://meu-bucket/backups/mydb_2026-03-03.dump --db mydb
+```
+
+As credenciais tambem podem ser fornecidas via variaveis de ambiente (recomendado para CI/producao):
+
+```bash
+export AWS_ACCESS_KEY_ID=AKIAIO...
+export AWS_SECRET_ACCESS_KEY=wJalrX...
+export AWS_DEFAULT_REGION=us-east-1
 ```
 
 ---

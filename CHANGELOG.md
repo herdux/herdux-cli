@@ -6,6 +6,20 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and 
 
 ---
 
+## [0.8.0] - 2026-03-03
+
+### Added
+
+- `hdx cloud config` command: configure cloud storage settings (bucket, region, access-key, secret-key, endpoint). Credentials stored in `~/.herdux/config.json`; env vars `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` take priority.
+- `hdx cloud list [--prefix PREFIX]` command: list backup files in the configured S3 bucket. Displays key, size, and last modified date in a table.
+- `hdx cloud download <key> [-o DIR]` command: download a backup file from the configured S3 bucket to a local directory.
+- `hdx cloud delete <key> [-y]` command: delete a backup file from the configured S3 bucket. Requires confirmation unless `--yes` is passed.
+- `hdx backup --upload [prefix]` flag: after a successful backup, upload the file to the configured S3 bucket. Accepts an optional key prefix (e.g. `backups/`).
+- `hdx restore s3://bucket/key --db mydb`: restore directly from an S3 URL. Downloads to a temp file, restores, then cleans up automatically.
+- Support for any S3-compatible provider (Cloudflare R2, MinIO, DigitalOcean Spaces) via `hdx cloud config endpoint URL`.
+
+---
+
 ## [0.7.0] - 2026-03-02
 
 ### Added
