@@ -231,11 +231,13 @@ Inspects the contents of a backup file without connecting to a database. Complet
 | Extension         | Output                                                                 |
 | ----------------- | ---------------------------------------------------------------------- |
 | `.dump`           | PostgreSQL custom format: full Table of Contents (`pg_restore --list`) |
+| `.tar`            | PostgreSQL tar format: full Table of Contents (`pg_restore --list`)    |
 | `.sql`            | Plain SQL (any engine): CREATE TABLE, VIEW, INDEX, SEQUENCE statements |
 | `.db` / `.sqlite` | SQLite database file: schema (`sqlite3 .schema`)                       |
 
 ```bash
 hdx inspect backup.dump           # Table of Contents of a PostgreSQL custom dump
+hdx inspect backup.tar            # Table of Contents of a PostgreSQL tar dump
 hdx inspect export.sql            # CREATE statements extracted from plain SQL
 hdx inspect mydb.db               # SQLite schema
 ```
