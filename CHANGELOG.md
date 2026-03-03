@@ -6,6 +6,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and 
 
 ---
 
+## [0.7.0] - 2026-03-02
+
+### Added
+
+- `hdx docker list` command: lists running postgres, mysql, and mariadb containers. Displays name, engine type, mapped host port, and status in a table. Accepts `--all` to include stopped containers.
+- `hdx docker start <name>` command: starts a stopped database container.
+- `hdx docker stop <name>` command: stops a running container. Accepts `--remove` to also remove it after stopping.
+
+---
+
 ## [0.6.0] - 2026-03-02
 
 ### Added

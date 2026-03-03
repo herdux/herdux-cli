@@ -12,7 +12,7 @@
 
 A fast, interactive CLI that removes friction from daily local database workflows, especially when juggling multiple instances and large datasets.
 
-![Version](https://img.shields.io/badge/version-0.6.0-blue.svg)
+![Version](https://img.shields.io/badge/version-0.7.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Node](https://img.shields.io/badge/node-18%2B-43853d.svg)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=flat&logo=postgresql&logoColor=white)
@@ -238,6 +238,20 @@ Inspects the contents of a backup file without connecting to a database. Complet
 hdx inspect backup.dump           # Table of Contents of a PostgreSQL custom dump
 hdx inspect export.sql            # CREATE statements extracted from plain SQL
 hdx inspect mydb.db               # SQLite schema
+```
+
+---
+
+### `herdux docker`
+
+Manages database containers running via Docker. Does not require a live database connection.
+
+```bash
+hdx docker list             # List running postgres/mysql containers
+hdx docker list --all       # Include stopped containers
+hdx docker start pg-dev     # Start a stopped container
+hdx docker stop pg-dev      # Stop a running container
+hdx docker stop pg-dev --remove   # Stop and remove the container
 ```
 
 ---
