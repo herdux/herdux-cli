@@ -1,5 +1,6 @@
 import { basename, join, resolve } from "path";
-import { existsSync } from "fs";
+import { existsSync, mkdirSync } from "fs";
+import { homedir } from "os";
 import type { Command } from "commander";
 import chalk from "chalk";
 import ora from "ora";
@@ -296,7 +297,7 @@ Examples:
     .description("Download a backup file from the configured S3 bucket")
     .option(
       "-o, --output <dir>",
-      "Destination directory (default: current dir)",
+      "Destination directory (default: ~/.herdux/backups)",
     )
     .action(async (key: string, opts: { output?: string }) => {
       try {
@@ -311,7 +312,10 @@ Examples:
         }
         const creds = resolveCloudCredentials(cloud);
 
-        const destDir = resolve(opts.output ?? ".");
+        const destDir = resolve(
+          opts.output ?? join(homedir(), ".herdux", "backups"),
+        );
+        mkdirSync(destDir, { recursive: true });
         const destPath = join(destDir, basename(key));
 
         if (existsSync(destPath)) {

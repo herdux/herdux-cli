@@ -71,6 +71,7 @@ jest.unstable_mockModule("prompts", () => ({
 
 jest.unstable_mockModule("fs", () => ({
   existsSync: jest.fn().mockReturnValue(false),
+  mkdirSync: jest.fn(),
   createReadStream: jest.fn(),
   createWriteStream: jest.fn(),
 }));
