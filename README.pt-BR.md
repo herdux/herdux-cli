@@ -231,11 +231,13 @@ Inspeciona o conteúdo de um arquivo de backup sem se conectar ao banco de dados
 | Extensão          | Output                                                                         |
 | ----------------- | ------------------------------------------------------------------------------ |
 | `.dump`           | Formato custom do PostgreSQL: Table of Contents completo (`pg_restore --list`) |
+| `.tar`            | Formato tar do PostgreSQL: Table of Contents completo (`pg_restore --list`)    |
 | `.sql`            | SQL puro (qualquer engine): declarações CREATE TABLE, VIEW, INDEX, SEQUENCE    |
 | `.db` / `.sqlite` | Arquivo SQLite: schema (`sqlite3 .schema`)                                     |
 
 ```bash
 hdx inspect backup.dump           # Table of Contents de um dump custom do PostgreSQL
+hdx inspect backup.tar            # Table of Contents de um dump tar do PostgreSQL
 hdx inspect export.sql            # CREATE statements extraídos de SQL puro
 hdx inspect mydb.db               # Schema do SQLite
 ```
