@@ -195,24 +195,37 @@ Examples:
           return;
         }
 
+        const MAX_DISPLAY = 200;
+        const truncated = objects.length > MAX_DISPLAY;
+        const display = truncated ? objects.slice(0, MAX_DISPLAY) : objects;
+
         spinner.succeed(
           `Found ${objects.length} object(s) in ${chalk.cyan(`s3://${cloud.bucket}/${opts.prefix ?? ""}`)}\n`,
         );
 
-        const keyWidth = Math.max(20, ...objects.map((o) => o.key.length)) + 2;
+        const keyWidth =
+          display.reduce((max, o) => Math.max(max, o.key.length), 20) + 2;
         const sizeWidth = 12;
 
         const header = `  ${"KEY".padEnd(keyWidth)}${"SIZE".padEnd(sizeWidth)}MODIFIED`;
         console.log(chalk.bold(header));
         console.log(chalk.gray(`  ${"─".repeat(keyWidth + sizeWidth + 20)}`));
 
-        for (const obj of objects) {
+        for (const obj of display) {
           console.log(
             `  ${chalk.cyan(obj.key.padEnd(keyWidth))}${formatSize(obj.size).padEnd(sizeWidth)}${chalk.gray(formatDate(obj.lastModified))}`,
           );
         }
 
-        console.log();
+        if (truncated) {
+          console.log(
+            chalk.yellow(
+              `\n  ... and ${objects.length - MAX_DISPLAY} more objects not shown. Use --prefix to narrow results.\n`,
+            ),
+          );
+        } else {
+          console.log();
+        }
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         console.error(chalk.red(`\n✖ ${message}\n`));

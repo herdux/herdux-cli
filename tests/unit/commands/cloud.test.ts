@@ -260,6 +260,29 @@ describe("hdx cloud", () => {
       consoleSpy.mockRestore();
     });
 
+    it("truncates output and shows message when result exceeds 200 objects", async () => {
+      mockGetCloudConfig.mockReturnValue(CLOUD_WITH_BUCKET);
+      mockResolveCreds.mockReturnValue(CREDS);
+      const now = new Date("2026-03-03T14:23:00Z");
+      const manyObjects = Array.from({ length: 250 }, (_, i) => ({
+        key: `backups/file-${i}.dump`,
+        size: 1000,
+        lastModified: now,
+      }));
+      mockListObjects.mockResolvedValue(manyObjects);
+      const consoleSpy = jest
+        .spyOn(console, "log")
+        .mockImplementation(() => undefined);
+
+      const { invokeSubAction } = buildFakeProgram();
+      await invokeSubAction("list", { prefix: undefined });
+
+      const output = consoleSpy.mock.calls.flat().join(" ");
+      expect(output).toMatch(/50 more objects not shown/);
+      expect(output).toMatch(/--prefix/);
+      consoleSpy.mockRestore();
+    });
+
     it("shows warning when no objects found", async () => {
       mockGetCloudConfig.mockReturnValue(CLOUD_WITH_BUCKET);
       mockResolveCreds.mockReturnValue(CREDS);
