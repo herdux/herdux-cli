@@ -239,14 +239,14 @@ describe("hdx cloud", () => {
         .mockImplementation(() => undefined);
 
       const { invokeSubAction } = buildFakeProgram();
-      await invokeSubAction("list", { prefix: undefined });
+      await invokeSubAction("list [path]", undefined, {});
 
       expect(mockListDirectory).toHaveBeenCalledWith("my-bucket", "", CREDS);
       expect(mockListObjects).not.toHaveBeenCalled();
       consoleSpy.mockRestore();
     });
 
-    it("passes prefix to listDirectory when --prefix is given", async () => {
+    it("accepts positional path argument for directory listing", async () => {
       mockGetCloudConfig.mockReturnValue(CLOUD_WITH_BUCKET);
       mockResolveCreds.mockReturnValue(CREDS);
       mockListDirectory.mockResolvedValue({ dirs: [], files: [] });
@@ -255,7 +255,7 @@ describe("hdx cloud", () => {
         .mockImplementation(() => undefined);
 
       const { invokeSubAction } = buildFakeProgram();
-      await invokeSubAction("list", { prefix: "backups/mydb/" });
+      await invokeSubAction("list [path]", "backups/mydb/", {});
 
       expect(mockListDirectory).toHaveBeenCalledWith(
         "my-bucket",
@@ -280,7 +280,7 @@ describe("hdx cloud", () => {
         .mockImplementation(() => undefined);
 
       const { invokeSubAction } = buildFakeProgram();
-      await invokeSubAction("list", { prefix: undefined, recursive: true });
+      await invokeSubAction("list [path]", undefined, { recursive: true });
 
       const output = consoleSpy.mock.calls.flat().join(" ");
       expect(output).toMatch(/50 more objects not shown/);
@@ -297,7 +297,7 @@ describe("hdx cloud", () => {
         .mockImplementation(() => undefined);
 
       const { invokeSubAction } = buildFakeProgram();
-      await invokeSubAction("list", { prefix: undefined });
+      await invokeSubAction("list [path]", undefined, {});
 
       expect(mockSpinnerWarn).toHaveBeenCalled();
       consoleSpy.mockRestore();
@@ -313,7 +313,7 @@ describe("hdx cloud", () => {
         .mockImplementation((() => undefined) as never);
 
       const { invokeSubAction } = buildFakeProgram();
-      await invokeSubAction("list", { prefix: undefined });
+      await invokeSubAction("list [path]", undefined, {});
 
       expect(exitSpy).toHaveBeenCalledWith(1);
       errorSpy.mockRestore();

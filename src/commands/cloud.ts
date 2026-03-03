@@ -70,7 +70,8 @@ Examples:
   hdx cloud config access-key AKIAIO...
   hdx cloud config secret-key wJalrX...
   hdx cloud list
-  hdx cloud list --prefix backups/mydb/
+  hdx cloud list tributario/
+  hdx cloud list "tributario/Pasta Clientes Migração/Clientes/ES/"
   hdx cloud download backups/mydb_2026-03-03.dump
   hdx cloud delete backups/mydb_2026-03-03.dump`,
     );
@@ -160,14 +161,13 @@ Examples:
       },
     );
 
-  // hdx cloud list [--prefix PREFIX] [-R]
+  // hdx cloud list [path] [-R]
   cloudCmd
-    .command("list")
+    .command("list [path]")
     .alias("ls")
     .description("List objects in the configured S3 bucket")
-    .option("-p, --prefix <prefix>", "Directory path or key prefix to list")
     .option("-R, --recursive", "List all objects recursively")
-    .action(async (opts: { prefix?: string; recursive?: boolean }) => {
+    .action(async (path: string | undefined, opts: { recursive?: boolean }) => {
       try {
         const cloud = getCloudConfig();
         if (!cloud.bucket) {
@@ -179,7 +179,7 @@ Examples:
           process.exit(1);
         }
         const creds = resolveCloudCredentials(cloud);
-        const prefix = opts.prefix ?? "";
+        const prefix = path ?? "";
         const spinner = ora("Fetching objects from S3...").start();
 
         if (opts.recursive) {
