@@ -150,6 +150,18 @@ describe("E2E: PostgreSQL Full Workflow", () => {
     });
   });
 
+  // ─── Inspect (.dump backup) ───
+
+  describe("inspect (.dump backup)", () => {
+    it("should display the Table of Contents of the .dump file without a live connection", async () => {
+      const result = await runCli("inspect", customBackupPath);
+
+      expect(result.exitCode).toBe(0);
+      // pg_restore --list always outputs the archive header with the dbname
+      expect(result.output).toContain(TEST_DB);
+    });
+  });
+
   // ─── Backup --drop --yes ───
 
   describe("backup --drop --yes", () => {
@@ -215,6 +227,18 @@ describe("E2E: PostgreSQL Full Workflow", () => {
       const sqlFile = files.find((f) => f.endsWith(".sql"));
       expect(sqlFile).toBeDefined();
       plainBackupPath = resolve(BACKUP_DIR, sqlFile!);
+    });
+  });
+
+  // ─── Inspect (.sql backup) ───
+
+  describe("inspect (.sql backup)", () => {
+    it("should extract CREATE statements from the .sql backup without a live connection", async () => {
+      const result = await runCli("inspect", plainBackupPath);
+
+      expect(result.exitCode).toBe(0);
+      // pg_dump plain format of an empty DB has no CREATE TABLE, so we get the empty message
+      expect(result.output).toContain("no CREATE statements found");
     });
   });
 

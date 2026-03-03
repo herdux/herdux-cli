@@ -30,10 +30,15 @@ Examples:
         const { engine, opts } = await resolveEngineAndConnection(rawOpts);
         await engine.checkClientVersion();
 
+        const host = opts.host ?? "localhost";
+        const connLabel = opts.port ? `${host}:${opts.port}` : host;
+
         const spinner = ora(`Creating database "${name}"...`).start();
 
         await engine.createDatabase(name, opts);
-        spinner.succeed(`Database "${name}" created successfully\n`);
+        spinner.succeed(
+          `Database "${name}" created (${engine.getEngineName()} at ${connLabel})\n`,
+        );
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         console.error(chalk.red(`\n✖ ${message}\n`));

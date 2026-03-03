@@ -329,8 +329,14 @@ export class MysqlEngine implements IDatabaseEngine {
     dbName: string,
     outputDir: string = "./backups",
     opts: ConnectionOptions = {},
-    _format: string = "plain",
+    format: string = "plain",
   ): Promise<string> {
+    if (format && format !== "plain") {
+      throw new Error(
+        `MySQL does not support "${format}" format. Only "plain" (SQL) is available.\n  Remove --format or use: --format plain`,
+      );
+    }
+
     const resolvedDir = resolve(outputDir);
 
     if (!existsSync(resolvedDir)) {

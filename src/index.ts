@@ -11,6 +11,7 @@ import { registerRestoreCommand } from "./commands/restore.js";
 import { registerConfigCommand } from "./commands/config.js";
 import { registerCleanCommand } from "./commands/clean.js";
 import { registerDoctorCommand } from "./commands/doctor.js";
+import { registerInspectCommand } from "./commands/inspect.js";
 
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
@@ -81,5 +82,6 @@ registerRestoreCommand(program);
 registerConfigCommand(program);
 registerCleanCommand(program);
 registerDoctorCommand(program);
+registerInspectCommand(program);
 
 program.parse();

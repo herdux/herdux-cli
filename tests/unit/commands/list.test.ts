@@ -152,8 +152,11 @@ describe.each(engines)(
       expect(mockListDatabases).toHaveBeenLastCalledWith(
         expect.objectContaining({ includeSize: false }),
       );
+      const connLabel = defaultOpts.port
+        ? `${defaultOpts.host}:${defaultOpts.port}`
+        : (defaultOpts.host ?? "localhost");
       expect(mockSpinnerSucceed).toHaveBeenLastCalledWith(
-        "Found 2 database(s)\n",
+        `Found 2 database(s) on ${engineName} (${connLabel})\n`,
       );
       // Header + separator + 2 rows + trailing newline
       expect(consoleLogSpy).toHaveBeenCalledTimes(5);

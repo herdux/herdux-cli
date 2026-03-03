@@ -153,8 +153,11 @@ describe.each(engines)(
         "testdb",
         expect.any(Object),
       );
+      const connLabel = defaultOpts.port
+        ? `${defaultOpts.host}:${defaultOpts.port}`
+        : (defaultOpts.host ?? "localhost");
       expect(mockSpinnerSucceed).toHaveBeenLastCalledWith(
-        'Database "testdb" dropped successfully\n',
+        `Database "testdb" dropped (${engineName} at ${connLabel})\n`,
       );
       expect(mockPromptsConfirm).not.toHaveBeenCalled();
     });
@@ -171,8 +174,11 @@ describe.each(engines)(
         "testdb",
         expect.any(Object),
       );
+      const connLabel = defaultOpts.port
+        ? `${defaultOpts.host}:${defaultOpts.port}`
+        : (defaultOpts.host ?? "localhost");
       expect(mockSpinnerSucceed).toHaveBeenLastCalledWith(
-        'Database "testdb" dropped successfully\n',
+        `Database "testdb" dropped (${engineName} at ${connLabel})\n`,
       );
     });
 

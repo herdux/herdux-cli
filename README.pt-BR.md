@@ -12,7 +12,7 @@
 
 Uma CLI rápida e interativa que remove a fricção dos workflows diários com bancos de dados locais, especialmente ao lidar com múltiplas instâncias e grandes datasets.
 
-![Version](https://img.shields.io/badge/version-0.5.0-blue.svg)
+![Version](https://img.shields.io/badge/version-0.6.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Node](https://img.shields.io/badge/node-18%2B-43853d.svg)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=flat&logo=postgresql&logoColor=white)
@@ -221,6 +221,24 @@ O banco de dados é criado automaticamente se não existir.
 
 > [!NOTE]
 > Ao restaurar dumps de ambientes gerenciados (ex: AWS RDS), o Herdux configura a ferramenta de restauração para ignorar ownership e ACLs, evitando erros por roles de produção ausentes localmente.
+
+---
+
+### `herdux inspect <arquivo>`
+
+Inspeciona o conteúdo de um arquivo de backup sem se conectar ao banco de dados. Funciona completamente offline.
+
+| Extensão          | Output                                                                         |
+| ----------------- | ------------------------------------------------------------------------------ |
+| `.dump`           | Formato custom do PostgreSQL: Table of Contents completo (`pg_restore --list`) |
+| `.sql`            | SQL puro (qualquer engine): declarações CREATE TABLE, VIEW, INDEX, SEQUENCE    |
+| `.db` / `.sqlite` | Arquivo SQLite: schema (`sqlite3 .schema`)                                     |
+
+```bash
+hdx inspect backup.dump           # Table of Contents de um dump custom do PostgreSQL
+hdx inspect export.sql            # CREATE statements extraídos de SQL puro
+hdx inspect mydb.db               # Schema do SQLite
+```
 
 ---
 

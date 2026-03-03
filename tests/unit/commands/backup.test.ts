@@ -341,5 +341,21 @@ describe.each(engines)(
         "Backup saved at /output/path/backup.sql\n",
       );
     });
+
+    it("catches and displays engine-level format rejection errors", async () => {
+      mockBackupDatabase.mockRejectedValue(
+        new Error(
+          `${engineName} does not support "custom" format. Only "plain" (SQL) is available.`,
+        ),
+      );
+      const { program } = buildFakeProgram();
+      registerBackupCmd(program as any);
+      await program.invokeAction("testdb", { format: "custom" });
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('does not support "custom" format'),
+      );
+      expect(processExitSpy).toHaveBeenCalledWith(1);
+    });
   },
 );

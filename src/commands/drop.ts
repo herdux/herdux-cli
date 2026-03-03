@@ -47,10 +47,15 @@ Examples:
           }
         }
 
+        const host = opts.host ?? "localhost";
+        const connLabel = opts.port ? `${host}:${opts.port}` : host;
+
         const spinner = ora(`Dropping database "${name}"...`).start();
 
         await engine.dropDatabase(name, opts);
-        spinner.succeed(`Database "${name}" dropped successfully\n`);
+        spinner.succeed(
+          `Database "${name}" dropped (${engine.getEngineName()} at ${connLabel})\n`,
+        );
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         console.error(chalk.red(`\n✖ ${message}\n`));

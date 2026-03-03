@@ -43,11 +43,16 @@ jest.unstable_mockModule("ora", () => ({
   default: jest.fn().mockImplementation(() => ({ start: mockSpinnerStart })),
 }));
 
+// chalk.bold.cyan is called by logger.title() — chalkFn enables that chain
+const chalkFn = (s: string) => s;
+chalkFn.cyan = (s: string) => s;
+
 jest.unstable_mockModule("chalk", () => ({
   default: {
-    bold: (s: string) => s,
+    bold: chalkFn,
     gray: (s: string) => s,
     cyan: (s: string) => s,
+    blue: (s: string) => s,
     yellow: (s: string) => s,
     green: (s: string) => s,
     red: (s: string) => s,

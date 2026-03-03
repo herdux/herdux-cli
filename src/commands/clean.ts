@@ -4,6 +4,7 @@ import ora from "ora";
 import prompts from "prompts";
 import { resolveEngineAndConnection } from "../infra/engines/resolve-connection.js";
 import * as config from "../infra/config/config.service.js";
+import { logger } from "../presentation/logger.js";
 import { join } from "path";
 import { homedir } from "os";
 
@@ -130,7 +131,8 @@ Note: You will be prompted to select databases, optionally backup them first,
           }
         }
 
-        console.log(chalk.green(`\n✔ Clean operation completed!`));
+        logger.blank();
+        logger.success("Clean operation completed.");
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         console.error(chalk.red(`\n✖ ${message}\n`));

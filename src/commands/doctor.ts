@@ -2,6 +2,7 @@ import type { Command } from "commander";
 import chalk from "chalk";
 import ora from "ora";
 import { resolveEngineAndConnection } from "../infra/engines/resolve-connection.js";
+import { logger } from "../presentation/logger.js";
 
 export function registerDoctorCommand(program: Command): void {
   program
@@ -18,9 +19,7 @@ Examples:
   hdx doctor --engine mysql`,
     )
     .action(async () => {
-      console.log(
-        chalk.bold("\n--- Herdux Doctor - System Health Check ---\n"),
-      );
+      logger.title("Herdux Doctor: System Health Check");
 
       const rawOpts = program.opts();
       const { engine, opts } = await resolveEngineAndConnection(rawOpts);
