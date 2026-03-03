@@ -254,6 +254,8 @@ Summary:
 
 **Exception — offline commands:** Commands that operate on local files without a live database connection (e.g., `inspect`) do NOT call `resolveEngineAndConnection()` or `checkClientVersion()`. They may use `src/infra/engines/` helpers directly, but must still keep all binary calls inside `infra/`.
 
+**Exception — Docker commands:** `hdx docker` manages containers via the Docker daemon and does not use `IDatabaseEngine` or `resolveEngineAndConnection()`. All Docker binary calls go through `src/infra/docker/docker.service.ts` using `runCommand()` from `command-runner.ts`.
+
 ---
 
 ## ADDING A NEW ENGINE
