@@ -3,6 +3,7 @@ import { pipeline } from "stream/promises";
 import {
   S3Client,
   GetObjectCommand,
+  HeadObjectCommand,
   ListObjectsV2Command,
   DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
@@ -159,4 +160,35 @@ export async function listDirectory(
   } while (continuationToken);
 
   return { files, dirs };
+}
+
+export type S3KeyType = "file" | "directory" | "not-found";
+
+export async function classifyKey(
+  bucket: string,
+  key: string,
+  creds: S3Credentials,
+): Promise<S3KeyType> {
+  const client = createClient(creds);
+
+  try {
+    await client.send(new HeadObjectCommand({ Bucket: bucket, Key: key }));
+    return "file";
+  } catch {
+    // Key does not exist as an exact object — check if it is a directory prefix
+  }
+
+  const dirPrefix = key.endsWith("/") ? key : `${key}/`;
+  const response = await client.send(
+    new ListObjectsV2Command({ Bucket: bucket, Prefix: dirPrefix, MaxKeys: 1 }),
+  );
+
+  if (
+    (response.Contents?.length ?? 0) > 0 ||
+    (response.CommonPrefixes?.length ?? 0) > 0
+  ) {
+    return "directory";
+  }
+
+  return "not-found";
 }

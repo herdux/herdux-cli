@@ -18,6 +18,7 @@ import {
   listObjects,
   listDirectory,
   deleteObject,
+  classifyKey,
 } from "../infra/cloud/s3.service.js";
 
 const CLOUD_CONFIG_KEYS = [
@@ -392,24 +393,46 @@ Examples:
         }
         const creds = resolveCloudCredentials(cloud);
 
-        if (!opts.yes) {
-          const { confirmed } = await prompts({
-            type: "confirm",
-            name: "confirmed",
-            message: `Delete s3://${cloud.bucket}/${key}?`,
-            initial: false,
-          });
-          if (!confirmed) {
-            console.log(chalk.gray("\n  Cancelled\n"));
-            return;
-          }
-        }
+        const checkSpinner = ora(
+          `Checking s3://${cloud.bucket}/${key}...`,
+        ).start();
+        const keyType = await classifyKey(cloud.bucket, key, creds);
 
-        const spinner = ora(`Deleting s3://${cloud.bucket}/${key}...`).start();
-        await deleteObject(cloud.bucket, key, creds);
-        spinner.succeed(
-          `Deleted: s3://${chalk.cyan(cloud.bucket)}/${chalk.cyan(key)}\n`,
-        );
+        if (keyType === "not-found") {
+          checkSpinner.fail(`Object not found: s3://${cloud.bucket}/${key}\n`);
+          process.exit(1);
+        } else if (keyType === "directory") {
+          checkSpinner.fail(`"${key}" is a directory prefix, not a file.`);
+          console.error(
+            chalk.red(
+              "  Delete files individually or use hdx cloud list to browse contents.\n",
+            ),
+          );
+          process.exit(1);
+        } else {
+          checkSpinner.stop();
+
+          if (!opts.yes) {
+            const { confirmed } = await prompts({
+              type: "confirm",
+              name: "confirmed",
+              message: `Delete s3://${cloud.bucket}/${key}?`,
+              initial: false,
+            });
+            if (!confirmed) {
+              console.log(chalk.gray("\n  Cancelled\n"));
+              return;
+            }
+          }
+
+          const spinner = ora(
+            `Deleting s3://${cloud.bucket}/${key}...`,
+          ).start();
+          await deleteObject(cloud.bucket, key, creds);
+          spinner.succeed(
+            `Deleted: s3://${chalk.cyan(cloud.bucket)}/${chalk.cyan(key)}\n`,
+          );
+        }
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         console.error(chalk.red(`\n✖ ${message}\n`));

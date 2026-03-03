@@ -5,12 +5,14 @@ import { jest } from "@jest/globals";
 const mockSend = jest.fn<() => Promise<unknown>>();
 const mockS3Client = jest.fn(() => ({ send: mockSend }));
 const mockGetObjectCommand = jest.fn();
+const mockHeadObjectCommand = jest.fn();
 const mockListObjectsV2Command = jest.fn();
 const mockDeleteObjectCommand = jest.fn();
 
 jest.unstable_mockModule("@aws-sdk/client-s3", () => ({
   S3Client: mockS3Client,
   GetObjectCommand: mockGetObjectCommand,
+  HeadObjectCommand: mockHeadObjectCommand,
   ListObjectsV2Command: mockListObjectsV2Command,
   DeleteObjectCommand: mockDeleteObjectCommand,
 }));
@@ -36,8 +38,14 @@ jest.unstable_mockModule("stream/promises", () => ({
   pipeline: mockPipeline,
 }));
 
-const { uploadFile, downloadFile, listObjects, deleteObject, listDirectory } =
-  await import("../../../src/infra/cloud/s3.service.js");
+const {
+  uploadFile,
+  downloadFile,
+  listObjects,
+  deleteObject,
+  listDirectory,
+  classifyKey,
+} = await import("../../../src/infra/cloud/s3.service.js");
 
 // --- Helpers ---
 
@@ -282,6 +290,64 @@ describe("s3.service", () => {
 
       expect(mockListObjectsV2Command).toHaveBeenCalledWith(
         expect.objectContaining({ Delimiter: "/" }),
+      );
+    });
+  });
+
+  // --- classifyKey ---
+
+  describe("classifyKey()", () => {
+    it("returns 'file' when HeadObject succeeds", async () => {
+      mockSend.mockResolvedValue({});
+
+      const result = await classifyKey("my-bucket", "backups/file.dump", CREDS);
+
+      expect(result).toBe("file");
+      expect(mockHeadObjectCommand).toHaveBeenCalledWith({
+        Bucket: "my-bucket",
+        Key: "backups/file.dump",
+      });
+    });
+
+    it("returns 'directory' when HeadObject fails but prefix has children", async () => {
+      const now = new Date();
+      mockSend
+        .mockRejectedValueOnce(new Error("NoSuchKey"))
+        .mockResolvedValueOnce({
+          Contents: [
+            { Key: "backups/dir/file.dump", Size: 100, LastModified: now },
+          ],
+          CommonPrefixes: [],
+        });
+
+      const result = await classifyKey("my-bucket", "backups/dir", CREDS);
+
+      expect(result).toBe("directory");
+    });
+
+    it("returns 'not-found' when HeadObject fails and prefix has no children", async () => {
+      mockSend
+        .mockRejectedValueOnce(new Error("NoSuchKey"))
+        .mockResolvedValueOnce({ Contents: [], CommonPrefixes: [] });
+
+      const result = await classifyKey(
+        "my-bucket",
+        "backups/missing.dump",
+        CREDS,
+      );
+
+      expect(result).toBe("not-found");
+    });
+
+    it("appends / to key when checking directory prefix", async () => {
+      mockSend
+        .mockRejectedValueOnce(new Error("NoSuchKey"))
+        .mockResolvedValueOnce({ Contents: [], CommonPrefixes: [] });
+
+      await classifyKey("my-bucket", "backups/mydir", CREDS);
+
+      expect(mockListObjectsV2Command).toHaveBeenCalledWith(
+        expect.objectContaining({ Prefix: "backups/mydir/" }),
       );
     });
   });

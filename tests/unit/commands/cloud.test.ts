@@ -32,6 +32,8 @@ const mockDownloadFile = jest.fn<() => Promise<void>>();
 const mockListObjects = jest.fn<() => Promise<S3Object[]>>();
 const mockListDirectory = jest.fn<() => Promise<S3DirResult>>();
 const mockDeleteObject = jest.fn<() => Promise<void>>();
+const mockClassifyKey =
+  jest.fn<() => Promise<"file" | "directory" | "not-found">>();
 
 jest.unstable_mockModule("../../../src/infra/cloud/s3.service.js", () => ({
   uploadFile: mockUploadFile,
@@ -39,13 +41,19 @@ jest.unstable_mockModule("../../../src/infra/cloud/s3.service.js", () => ({
   listObjects: mockListObjects,
   listDirectory: mockListDirectory,
   deleteObject: mockDeleteObject,
+  classifyKey: mockClassifyKey,
 }));
 
 const mockSpinnerSucceed = jest.fn();
 const mockSpinnerWarn = jest.fn();
-const mockSpinnerStart = jest
-  .fn()
-  .mockReturnValue({ succeed: mockSpinnerSucceed, warn: mockSpinnerWarn });
+const mockSpinnerFail = jest.fn();
+const mockSpinnerStop = jest.fn();
+const mockSpinnerStart = jest.fn().mockReturnValue({
+  succeed: mockSpinnerSucceed,
+  warn: mockSpinnerWarn,
+  fail: mockSpinnerFail,
+  stop: mockSpinnerStop,
+});
 
 jest.unstable_mockModule("ora", () => ({
   default: jest.fn().mockImplementation(() => ({ start: mockSpinnerStart })),
@@ -445,6 +453,7 @@ describe("hdx cloud", () => {
     it("deletes object without confirmation when --yes is set", async () => {
       mockGetCloudConfig.mockReturnValue(CLOUD_WITH_BUCKET);
       mockResolveCreds.mockReturnValue(CREDS);
+      mockClassifyKey.mockResolvedValue("file");
       mockDeleteObject.mockResolvedValue(undefined);
 
       const { invokeSubAction } = buildFakeProgram();
@@ -461,6 +470,7 @@ describe("hdx cloud", () => {
     it("prompts for confirmation when --yes is not set", async () => {
       mockGetCloudConfig.mockReturnValue(CLOUD_WITH_BUCKET);
       mockResolveCreds.mockReturnValue(CREDS);
+      mockClassifyKey.mockResolvedValue("file");
       mockDeleteObject.mockResolvedValue(undefined);
       mockPrompts.mockResolvedValue({ confirmed: true });
 
@@ -476,6 +486,7 @@ describe("hdx cloud", () => {
     it("cancels when user declines confirmation", async () => {
       mockGetCloudConfig.mockReturnValue(CLOUD_WITH_BUCKET);
       mockResolveCreds.mockReturnValue(CREDS);
+      mockClassifyKey.mockResolvedValue("file");
       mockPrompts.mockResolvedValue({ confirmed: false });
       const consoleSpy = jest
         .spyOn(console, "log")
@@ -488,6 +499,44 @@ describe("hdx cloud", () => {
 
       expect(mockDeleteObject).not.toHaveBeenCalled();
       consoleSpy.mockRestore();
+    });
+
+    it("exits with error when object is not found", async () => {
+      mockGetCloudConfig.mockReturnValue(CLOUD_WITH_BUCKET);
+      mockResolveCreds.mockReturnValue(CREDS);
+      mockClassifyKey.mockResolvedValue("not-found");
+      const exitSpy = jest
+        .spyOn(process, "exit")
+        .mockImplementation((() => undefined) as never);
+
+      const { invokeSubAction } = buildFakeProgram();
+      await invokeSubAction("delete <key>", "missing.dump", { yes: true });
+
+      expect(mockSpinnerFail).toHaveBeenCalled();
+      expect(mockDeleteObject).not.toHaveBeenCalled();
+      expect(exitSpy).toHaveBeenCalledWith(1);
+      exitSpy.mockRestore();
+    });
+
+    it("exits with error when key is a directory prefix", async () => {
+      mockGetCloudConfig.mockReturnValue(CLOUD_WITH_BUCKET);
+      mockResolveCreds.mockReturnValue(CREDS);
+      mockClassifyKey.mockResolvedValue("directory");
+      const errorSpy = jest
+        .spyOn(console, "error")
+        .mockImplementation(() => undefined);
+      const exitSpy = jest
+        .spyOn(process, "exit")
+        .mockImplementation((() => undefined) as never);
+
+      const { invokeSubAction } = buildFakeProgram();
+      await invokeSubAction("delete <key>", "backups/", { yes: true });
+
+      expect(mockSpinnerFail).toHaveBeenCalled();
+      expect(mockDeleteObject).not.toHaveBeenCalled();
+      expect(exitSpy).toHaveBeenCalledWith(1);
+      errorSpy.mockRestore();
+      exitSpy.mockRestore();
     });
 
     it("exits with error when bucket is not configured", async () => {
