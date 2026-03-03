@@ -1,7 +1,13 @@
 import type { Command } from "commander";
 import chalk from "chalk";
 import ora from "ora";
+import { join } from "path";
+import { tmpdir } from "os";
+import { existsSync, unlinkSync } from "fs";
 import { resolveEngineAndConnection } from "../infra/engines/resolve-connection.js";
+import { getCloudConfig } from "../infra/config/config.service.js";
+import { resolveCloudCredentials } from "../infra/cloud/cloud-credential.js";
+import { downloadFile } from "../infra/cloud/s3.service.js";
 
 export function registerRestoreCommand(program: Command): void {
   program
@@ -17,17 +23,47 @@ Examples:
   hdx restore backup.sql --db mydb --format plain
   hdx restore backup.dump --db mydb --engine mysql
   hdx restore backup.dump --db mydb --host 192.168.1.1 --user admin
+  hdx restore s3://my-bucket/backups/mydb_2026-03-03.dump --db mydb
 
 Note: If the target database does not exist it will be created automatically.
-      Restoration warnings (e.g. missing roles) are reported but do not stop the process.`,
+      Restoration warnings (e.g. missing roles) are reported but do not stop the process.
+      S3 URLs (s3://bucket/key) are downloaded to a temp file before restore.`,
     )
     .requiredOption("--db <name>", "Target database name for restore")
     .option("-F, --format <type>", "Override auto-detection (custom, plain)")
     .action(async (file: string, cmdOpts: { db: string; format?: string }) => {
+      let tempFile: string | null = null;
+
       try {
         const rawOpts = program.opts();
         const { engine, opts } = await resolveEngineAndConnection(rawOpts);
         await engine.checkClientVersion();
+
+        if (file.startsWith("s3://")) {
+          const withoutScheme = file.slice("s3://".length);
+          const slashIndex = withoutScheme.indexOf("/");
+          if (slashIndex === -1) {
+            console.error(
+              chalk.red(
+                `\n✖ Invalid S3 URL "${file}". Expected format: s3://bucket/key\n`,
+              ),
+            );
+            process.exit(1);
+          }
+          const bucket = withoutScheme.slice(0, slashIndex);
+          const key = withoutScheme.slice(slashIndex + 1);
+          const filename = key.split("/").pop() ?? "backup";
+          tempFile = join(tmpdir(), `herdux-restore-${Date.now()}-${filename}`);
+
+          const cloud = getCloudConfig();
+          const creds = resolveCloudCredentials({ ...cloud, bucket });
+
+          const dlSpinner = ora(`Downloading ${file}...`).start();
+          await downloadFile(bucket, key, tempFile, creds);
+          dlSpinner.succeed(`Downloaded to temp file\n`);
+
+          file = tempFile;
+        }
 
         if (
           cmdOpts.format &&
@@ -93,6 +129,10 @@ Note: If the target database does not exist it will be created automatically.
         const message = err instanceof Error ? err.message : String(err);
         console.error(chalk.red(`\n✖ ${message}\n`));
         process.exit(1);
+      } finally {
+        if (tempFile && existsSync(tempFile)) {
+          unlinkSync(tempFile);
+        }
       }
     });
 }

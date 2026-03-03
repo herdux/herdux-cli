@@ -4,7 +4,9 @@ import ora from "ora";
 import prompts from "prompts";
 import { resolveEngineAndConnection } from "../infra/engines/resolve-connection.js";
 import * as config from "../infra/config/config.service.js";
-import { join } from "path";
+import { resolveCloudCredentials } from "../infra/cloud/cloud-credential.js";
+import { uploadFile } from "../infra/cloud/s3.service.js";
+import { basename, join } from "path";
 import { homedir } from "os";
 
 export function registerBackupCommand(program: Command): void {
@@ -19,7 +21,9 @@ Examples:
   hdx backup mydb --output /tmp/backups
   hdx backup mydb --format plain
   hdx backup mydb --drop --yes     # Backup then drop without confirmation
-  hdx backup mydb --engine mysql`,
+  hdx backup mydb --engine mysql
+  hdx backup mydb --upload backups/
+  hdx backup mydb --upload          # Upload to bucket root`,
     )
     .option(
       "-o, --output <dir>",
@@ -32,6 +36,10 @@ Examples:
       "Backup format format (custom, plain)",
       "custom",
     )
+    .option(
+      "-u, --upload [prefix]",
+      "Upload backup to configured S3 bucket after backup",
+    )
     .action(
       async (
         database: string,
@@ -40,6 +48,7 @@ Examples:
           drop?: boolean;
           yes?: boolean;
           format: string;
+          upload?: string | boolean;
         },
       ) => {
         if (/[\s;|&`$<>(){}\\]/.test(database)) {
@@ -82,7 +91,36 @@ Examples:
             opts,
             cmdOpts.format as "custom" | "plain",
           );
-          spinner.succeed(`Backup saved at ${chalk.cyan(outputPath)}\n`);
+          spinner.succeed(`Backup saved: ${chalk.cyan(outputPath)}\n`);
+
+          if (cmdOpts.upload !== undefined) {
+            const cloud = config.getCloudConfig();
+            if (!cloud.bucket) {
+              console.error(
+                chalk.red(
+                  "✖ Bucket not configured. Run: hdx cloud config bucket NAME\n",
+                ),
+              );
+              process.exit(1);
+            }
+            const creds = resolveCloudCredentials(cloud);
+            const prefix =
+              typeof cmdOpts.upload === "string" ? cmdOpts.upload : "";
+            const key = prefix
+              ? `${prefix.replace(/\/$/, "")}/${basename(outputPath)}`
+              : basename(outputPath);
+
+            const uploadSpinner = ora(
+              `Uploading to s3://${cloud.bucket}/${key}...`,
+            ).start();
+            const s3Url = await uploadFile(
+              outputPath,
+              cloud.bucket,
+              key,
+              creds,
+            );
+            uploadSpinner.succeed(`Uploaded: ${chalk.cyan(s3Url)}\n`);
+          }
 
           if (cmdOpts.drop) {
             let shouldDrop = cmdOpts.yes;

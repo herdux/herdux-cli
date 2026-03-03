@@ -186,7 +186,7 @@ describe.each(engines)(
         "custom",
       );
       expect(mockSpinnerSucceed).toHaveBeenLastCalledWith(
-        "Backup saved at /output/path/backup.dump\n",
+        "Backup saved: /output/path/backup.dump\n",
       );
     });
 
@@ -338,7 +338,7 @@ describe.each(engines)(
         "plain",
       );
       expect(mockSpinnerSucceed).toHaveBeenLastCalledWith(
-        "Backup saved at /output/path/backup.sql\n",
+        "Backup saved: /output/path/backup.sql\n",
       );
     });
 
