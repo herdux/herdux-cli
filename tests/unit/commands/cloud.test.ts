@@ -3,6 +3,7 @@ import type { CloudConfig } from "../../../src/infra/config/config.service.js";
 import type {
   S3Credentials,
   S3Object,
+  S3DirResult,
 } from "../../../src/infra/cloud/s3.service.js";
 
 // --- Mocks ---
@@ -29,12 +30,14 @@ jest.unstable_mockModule(
 const mockUploadFile = jest.fn<() => Promise<string>>();
 const mockDownloadFile = jest.fn<() => Promise<void>>();
 const mockListObjects = jest.fn<() => Promise<S3Object[]>>();
+const mockListDirectory = jest.fn<() => Promise<S3DirResult>>();
 const mockDeleteObject = jest.fn<() => Promise<void>>();
 
 jest.unstable_mockModule("../../../src/infra/cloud/s3.service.js", () => ({
   uploadFile: mockUploadFile,
   downloadFile: mockDownloadFile,
   listObjects: mockListObjects,
+  listDirectory: mockListDirectory,
   deleteObject: mockDeleteObject,
 }));
 
@@ -223,13 +226,14 @@ describe("hdx cloud", () => {
   // --- list subcommand ---
 
   describe("list subcommand", () => {
-    it("lists objects in bucket", async () => {
+    it("uses listDirectory by default and shows dirs and files", async () => {
       mockGetCloudConfig.mockReturnValue(CLOUD_WITH_BUCKET);
       mockResolveCreds.mockReturnValue(CREDS);
       const now = new Date("2026-03-03T14:23:00Z");
-      mockListObjects.mockResolvedValue([
-        { key: "backups/mydb.dump", size: 1200000, lastModified: now },
-      ]);
+      mockListDirectory.mockResolvedValue({
+        dirs: ["backups/ES/", "backups/SP/"],
+        files: [{ key: "backups/readme.txt", size: 100, lastModified: now }],
+      });
       const consoleSpy = jest
         .spyOn(console, "log")
         .mockImplementation(() => undefined);
@@ -237,14 +241,15 @@ describe("hdx cloud", () => {
       const { invokeSubAction } = buildFakeProgram();
       await invokeSubAction("list", { prefix: undefined });
 
-      expect(mockListObjects).toHaveBeenCalledWith("my-bucket", "", CREDS);
+      expect(mockListDirectory).toHaveBeenCalledWith("my-bucket", "", CREDS);
+      expect(mockListObjects).not.toHaveBeenCalled();
       consoleSpy.mockRestore();
     });
 
-    it("passes prefix to listObjects when --prefix is given", async () => {
+    it("passes prefix to listDirectory when --prefix is given", async () => {
       mockGetCloudConfig.mockReturnValue(CLOUD_WITH_BUCKET);
       mockResolveCreds.mockReturnValue(CREDS);
-      mockListObjects.mockResolvedValue([]);
+      mockListDirectory.mockResolvedValue({ dirs: [], files: [] });
       const consoleSpy = jest
         .spyOn(console, "log")
         .mockImplementation(() => undefined);
@@ -252,7 +257,7 @@ describe("hdx cloud", () => {
       const { invokeSubAction } = buildFakeProgram();
       await invokeSubAction("list", { prefix: "backups/mydb/" });
 
-      expect(mockListObjects).toHaveBeenCalledWith(
+      expect(mockListDirectory).toHaveBeenCalledWith(
         "my-bucket",
         "backups/mydb/",
         CREDS,
@@ -260,7 +265,7 @@ describe("hdx cloud", () => {
       consoleSpy.mockRestore();
     });
 
-    it("truncates output and shows message when result exceeds 200 objects", async () => {
+    it("uses listObjects and truncates output when --recursive and result exceeds 200", async () => {
       mockGetCloudConfig.mockReturnValue(CLOUD_WITH_BUCKET);
       mockResolveCreds.mockReturnValue(CREDS);
       const now = new Date("2026-03-03T14:23:00Z");
@@ -275,7 +280,7 @@ describe("hdx cloud", () => {
         .mockImplementation(() => undefined);
 
       const { invokeSubAction } = buildFakeProgram();
-      await invokeSubAction("list", { prefix: undefined });
+      await invokeSubAction("list", { prefix: undefined, recursive: true });
 
       const output = consoleSpy.mock.calls.flat().join(" ");
       expect(output).toMatch(/50 more objects not shown/);
@@ -283,10 +288,10 @@ describe("hdx cloud", () => {
       consoleSpy.mockRestore();
     });
 
-    it("shows warning when no objects found", async () => {
+    it("shows warning when no objects found (directory mode)", async () => {
       mockGetCloudConfig.mockReturnValue(CLOUD_WITH_BUCKET);
       mockResolveCreds.mockReturnValue(CREDS);
-      mockListObjects.mockResolvedValue([]);
+      mockListDirectory.mockResolvedValue({ dirs: [], files: [] });
       const consoleSpy = jest
         .spyOn(console, "log")
         .mockImplementation(() => undefined);

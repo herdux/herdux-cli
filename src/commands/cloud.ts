@@ -15,6 +15,7 @@ import {
   uploadFile,
   downloadFile,
   listObjects,
+  listDirectory,
   deleteObject,
 } from "../infra/cloud/s3.service.js";
 
@@ -159,13 +160,14 @@ Examples:
       },
     );
 
-  // hdx cloud list [--prefix PREFIX]
+  // hdx cloud list [--prefix PREFIX] [-R]
   cloudCmd
     .command("list")
     .alias("ls")
-    .description("List backup files in the configured S3 bucket")
-    .option("-p, --prefix <prefix>", "Filter by key prefix")
-    .action(async (opts: { prefix?: string }) => {
+    .description("List objects in the configured S3 bucket")
+    .option("-p, --prefix <prefix>", "Directory path or key prefix to list")
+    .option("-R, --recursive", "List all objects recursively")
+    .action(async (opts: { prefix?: string; recursive?: boolean }) => {
       try {
         const cloud = getCloudConfig();
         if (!cloud.bucket) {
@@ -177,53 +179,108 @@ Examples:
           process.exit(1);
         }
         const creds = resolveCloudCredentials(cloud);
-
+        const prefix = opts.prefix ?? "";
         const spinner = ora("Fetching objects from S3...").start();
-        const objects = await listObjects(
-          cloud.bucket,
-          opts.prefix ?? "",
-          creds,
-        );
 
-        if (objects.length === 0) {
-          spinner.warn(
-            opts.prefix
-              ? `No objects found with prefix "${opts.prefix}"`
-              : "No objects found in bucket",
+        if (opts.recursive) {
+          const objects = await listObjects(cloud.bucket, prefix, creds);
+
+          if (objects.length === 0) {
+            spinner.warn(
+              prefix
+                ? `No objects found with prefix "${prefix}"`
+                : "No objects found in bucket",
+            );
+            console.log();
+            return;
+          }
+
+          const MAX_DISPLAY = 200;
+          const truncated = objects.length > MAX_DISPLAY;
+          const display = truncated ? objects.slice(0, MAX_DISPLAY) : objects;
+
+          spinner.succeed(
+            `Found ${objects.length} object(s) in ${chalk.cyan(`s3://${cloud.bucket}/${prefix}`)}\n`,
           );
-          console.log();
-          return;
-        }
 
-        const MAX_DISPLAY = 200;
-        const truncated = objects.length > MAX_DISPLAY;
-        const display = truncated ? objects.slice(0, MAX_DISPLAY) : objects;
+          const relKeys = display.map((o) => o.key.slice(prefix.length));
+          const keyWidth =
+            relKeys.reduce((max, k) => Math.max(max, k.length), 20) + 2;
+          const sizeWidth = 12;
 
-        spinner.succeed(
-          `Found ${objects.length} object(s) in ${chalk.cyan(`s3://${cloud.bucket}/${opts.prefix ?? ""}`)}\n`,
-        );
-
-        const keyWidth =
-          display.reduce((max, o) => Math.max(max, o.key.length), 20) + 2;
-        const sizeWidth = 12;
-
-        const header = `  ${"KEY".padEnd(keyWidth)}${"SIZE".padEnd(sizeWidth)}MODIFIED`;
-        console.log(chalk.bold(header));
-        console.log(chalk.gray(`  ${"─".repeat(keyWidth + sizeWidth + 20)}`));
-
-        for (const obj of display) {
           console.log(
-            `  ${chalk.cyan(obj.key.padEnd(keyWidth))}${formatSize(obj.size).padEnd(sizeWidth)}${chalk.gray(formatDate(obj.lastModified))}`,
-          );
-        }
-
-        if (truncated) {
-          console.log(
-            chalk.yellow(
-              `\n  ... and ${objects.length - MAX_DISPLAY} more objects not shown. Use --prefix to narrow results.\n`,
+            chalk.bold(
+              `  ${"KEY".padEnd(keyWidth)}${"SIZE".padEnd(sizeWidth)}MODIFIED`,
             ),
           );
+          console.log(chalk.gray(`  ${"─".repeat(keyWidth + sizeWidth + 20)}`));
+
+          for (let i = 0; i < display.length; i++) {
+            const obj = display[i];
+            console.log(
+              `  ${chalk.cyan(relKeys[i].padEnd(keyWidth))}${formatSize(obj.size).padEnd(sizeWidth)}${chalk.gray(formatDate(obj.lastModified))}`,
+            );
+          }
+
+          if (truncated) {
+            console.log(
+              chalk.yellow(
+                `\n  ... and ${objects.length - MAX_DISPLAY} more objects not shown. Use --prefix to narrow results.\n`,
+              ),
+            );
+          } else {
+            console.log();
+          }
         } else {
+          const { files, dirs } = await listDirectory(
+            cloud.bucket,
+            prefix,
+            creds,
+          );
+
+          if (files.length === 0 && dirs.length === 0) {
+            spinner.warn(
+              prefix
+                ? `No objects found with prefix "${prefix}"`
+                : "No objects found in bucket",
+            );
+            console.log();
+            return;
+          }
+
+          spinner.succeed(
+            `Found ${dirs.length + files.length} item(s) in ${chalk.cyan(`s3://${cloud.bucket}/${prefix}`)}\n`,
+          );
+
+          const allNames = [
+            ...dirs.map((d) => d.slice(prefix.length)),
+            ...files.map((f) => f.key.slice(prefix.length)),
+          ];
+          const keyWidth =
+            allNames.reduce((max, n) => Math.max(max, n.length), 20) + 2;
+          const sizeWidth = 12;
+
+          console.log(
+            chalk.bold(
+              `  ${"NAME".padEnd(keyWidth)}${"SIZE".padEnd(sizeWidth)}MODIFIED`,
+            ),
+          );
+          console.log(chalk.gray(`  ${"─".repeat(keyWidth + sizeWidth + 20)}`));
+
+          for (const dir of dirs) {
+            const name = dir.slice(prefix.length);
+            console.log(
+              `  ${chalk.cyan(name.padEnd(keyWidth))}${chalk.gray("[dir]")}`,
+            );
+          }
+
+          for (const obj of files) {
+            const name = obj.key.slice(prefix.length);
+            console.log(
+              `  ${chalk.cyan(name.padEnd(keyWidth))}${formatSize(obj.size).padEnd(sizeWidth)}${chalk.gray(formatDate(obj.lastModified))}`,
+            );
+          }
+
           console.log();
         }
       } catch (err) {

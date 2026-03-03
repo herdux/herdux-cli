@@ -36,7 +36,7 @@ jest.unstable_mockModule("stream/promises", () => ({
   pipeline: mockPipeline,
 }));
 
-const { uploadFile, downloadFile, listObjects, deleteObject } =
+const { uploadFile, downloadFile, listObjects, deleteObject, listDirectory } =
   await import("../../../src/infra/cloud/s3.service.js");
 
 // --- Helpers ---
@@ -217,6 +217,72 @@ describe("s3.service", () => {
         Key: "backups/mydb.dump",
       });
       expect(mockSend).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  // --- listDirectory ---
+
+  describe("listDirectory()", () => {
+    it("returns files and dirs for the given prefix level", async () => {
+      const now = new Date("2026-03-03T14:23:00Z");
+      mockSend.mockResolvedValue({
+        Contents: [{ Key: "backups/file.dump", Size: 1000, LastModified: now }],
+        CommonPrefixes: [
+          { Prefix: "backups/subdir/" },
+          { Prefix: "backups/other/" },
+        ],
+        NextContinuationToken: undefined,
+      });
+
+      const result = await listDirectory("my-bucket", "backups/", CREDS);
+
+      expect(result.files).toHaveLength(1);
+      expect(result.files[0].key).toBe("backups/file.dump");
+      expect(result.dirs).toEqual(["backups/subdir/", "backups/other/"]);
+    });
+
+    it("skips folder marker objects (0-byte keys ending with /)", async () => {
+      const now = new Date();
+      mockSend.mockResolvedValue({
+        Contents: [
+          { Key: "backups/", Size: 0, LastModified: now },
+          { Key: "backups/real.dump", Size: 500, LastModified: now },
+        ],
+        CommonPrefixes: [],
+        NextContinuationToken: undefined,
+      });
+
+      const result = await listDirectory("my-bucket", "backups/", CREDS);
+
+      expect(result.files).toHaveLength(1);
+      expect(result.files[0].key).toBe("backups/real.dump");
+    });
+
+    it("returns empty files and dirs when prefix has no content", async () => {
+      mockSend.mockResolvedValue({
+        Contents: [],
+        CommonPrefixes: [],
+        NextContinuationToken: undefined,
+      });
+
+      const result = await listDirectory("my-bucket", "empty/", CREDS);
+
+      expect(result.files).toHaveLength(0);
+      expect(result.dirs).toHaveLength(0);
+    });
+
+    it("sends ListObjectsV2Command with Delimiter set to /", async () => {
+      mockSend.mockResolvedValue({
+        Contents: [],
+        CommonPrefixes: [],
+        NextContinuationToken: undefined,
+      });
+
+      await listDirectory("my-bucket", "backups/", CREDS);
+
+      expect(mockListObjectsV2Command).toHaveBeenCalledWith(
+        expect.objectContaining({ Delimiter: "/" }),
+      );
     });
   });
 });

@@ -114,3 +114,49 @@ export async function deleteObject(
   const client = createClient(creds);
   await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
 }
+
+export interface S3DirResult {
+  files: S3Object[];
+  dirs: string[];
+}
+
+export async function listDirectory(
+  bucket: string,
+  prefix: string,
+  creds: S3Credentials,
+): Promise<S3DirResult> {
+  const client = createClient(creds);
+  const files: S3Object[] = [];
+  const dirs: string[] = [];
+  let continuationToken: string | undefined;
+
+  do {
+    const response = await client.send(
+      new ListObjectsV2Command({
+        Bucket: bucket,
+        Prefix: prefix || undefined,
+        Delimiter: "/",
+        ContinuationToken: continuationToken,
+      }),
+    );
+
+    for (const obj of response.Contents ?? []) {
+      if (obj.Key && obj.Size !== undefined && obj.LastModified) {
+        if (obj.Key.endsWith("/") && obj.Size === 0) continue;
+        files.push({
+          key: obj.Key,
+          size: obj.Size,
+          lastModified: obj.LastModified,
+        });
+      }
+    }
+
+    for (const cp of response.CommonPrefixes ?? []) {
+      if (cp.Prefix) dirs.push(cp.Prefix);
+    }
+
+    continuationToken = response.NextContinuationToken;
+  } while (continuationToken);
+
+  return { files, dirs };
+}
