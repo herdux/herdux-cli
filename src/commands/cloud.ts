@@ -73,6 +73,8 @@ Examples:
   hdx cloud list
   hdx cloud list tributario/
   hdx cloud list "tributario/Pasta Clientes Migração/Clientes/ES/"
+  hdx cloud upload /tmp/mydb.dump
+  hdx cloud upload /tmp/mydb.dump --prefix backups/mydb/
   hdx cloud download backups/mydb_2026-03-03.dump
   hdx cloud delete backups/mydb_2026-03-03.dump`,
     );
@@ -284,6 +286,43 @@ Examples:
 
           console.log();
         }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        console.error(chalk.red(`\n✖ ${message}\n`));
+        process.exit(1);
+      }
+    });
+
+  // hdx cloud upload <file> [--prefix PREFIX]
+  cloudCmd
+    .command("upload <file>")
+    .description("Upload a local file to the configured S3 bucket")
+    .option("-p, --prefix <prefix>", "Destination folder in the bucket")
+    .action(async (file: string, opts: { prefix?: string }) => {
+      try {
+        const cloud = getCloudConfig();
+        if (!cloud.bucket) {
+          console.error(
+            chalk.red(
+              "\n✖ Bucket not configured. Run: hdx cloud config bucket NAME\n",
+            ),
+          );
+          process.exit(1);
+        }
+        if (!existsSync(file)) {
+          console.error(chalk.red(`\n✖ File not found: ${file}\n`));
+          process.exit(1);
+        }
+        const creds = resolveCloudCredentials(cloud);
+        const key = opts.prefix
+          ? `${opts.prefix.replace(/\/$/, "")}/${basename(file)}`
+          : basename(file);
+
+        const spinner = ora(
+          `Uploading to s3://${cloud.bucket}/${key}...`,
+        ).start();
+        const s3Url = await uploadFile(file, cloud.bucket, key, creds);
+        spinner.succeed(`Uploaded: ${chalk.cyan(s3Url)}\n`);
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         console.error(chalk.red(`\n✖ ${message}\n`));

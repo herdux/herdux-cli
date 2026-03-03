@@ -8,6 +8,7 @@ import { resolveCloudCredentials } from "../infra/cloud/cloud-credential.js";
 import { uploadFile } from "../infra/cloud/s3.service.js";
 import { basename, join } from "path";
 import { homedir } from "os";
+import { unlinkSync } from "fs";
 
 export function registerBackupCommand(program: Command): void {
   program
@@ -23,7 +24,8 @@ Examples:
   hdx backup mydb --drop --yes     # Backup then drop without confirmation
   hdx backup mydb --engine mysql
   hdx backup mydb --upload backups/
-  hdx backup mydb --upload          # Upload to bucket root`,
+  hdx backup mydb --upload          # Upload to bucket root
+  hdx backup mydb --upload --no-keep   # Upload and delete local file`,
     )
     .option(
       "-o, --output <dir>",
@@ -40,6 +42,10 @@ Examples:
       "-u, --upload [prefix]",
       "Upload backup to configured S3 bucket after backup",
     )
+    .option(
+      "--no-keep",
+      "Delete local backup after successful upload (requires --upload)",
+    )
     .action(
       async (
         database: string,
@@ -49,6 +55,7 @@ Examples:
           yes?: boolean;
           format: string;
           upload?: string | boolean;
+          keep: boolean;
         },
       ) => {
         if (/[\s;|&`$<>(){}\\]/.test(database)) {
@@ -120,6 +127,11 @@ Examples:
               creds,
             );
             uploadSpinner.succeed(`Uploaded: ${chalk.cyan(s3Url)}\n`);
+
+            if (!cmdOpts.keep) {
+              unlinkSync(outputPath);
+              console.log(chalk.gray(`  Local backup deleted.\n`));
+            }
           }
 
           if (cmdOpts.drop) {

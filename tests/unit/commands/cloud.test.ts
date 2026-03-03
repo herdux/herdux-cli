@@ -363,6 +363,82 @@ describe("hdx cloud", () => {
     });
   });
 
+  // --- upload subcommand ---
+
+  describe("upload subcommand", () => {
+    it("uploads file with basename as key when no prefix given", async () => {
+      mockGetCloudConfig.mockReturnValue(CLOUD_WITH_BUCKET);
+      mockResolveCreds.mockReturnValue(CREDS);
+      mockUploadFile.mockResolvedValue("s3://my-bucket/mydb.dump");
+      const { existsSync } = await import("fs");
+      (existsSync as jest.Mock).mockReturnValueOnce(true);
+
+      const { invokeSubAction } = buildFakeProgram();
+      await invokeSubAction("upload <file>", "/tmp/mydb.dump", {});
+
+      expect(mockUploadFile).toHaveBeenCalledWith(
+        "/tmp/mydb.dump",
+        "my-bucket",
+        "mydb.dump",
+        CREDS,
+      );
+    });
+
+    it("prepends prefix to key when --prefix is given", async () => {
+      mockGetCloudConfig.mockReturnValue(CLOUD_WITH_BUCKET);
+      mockResolveCreds.mockReturnValue(CREDS);
+      mockUploadFile.mockResolvedValue("s3://my-bucket/backups/mydb.dump");
+      const { existsSync } = await import("fs");
+      (existsSync as jest.Mock).mockReturnValueOnce(true);
+
+      const { invokeSubAction } = buildFakeProgram();
+      await invokeSubAction("upload <file>", "/tmp/mydb.dump", {
+        prefix: "backups/",
+      });
+
+      expect(mockUploadFile).toHaveBeenCalledWith(
+        "/tmp/mydb.dump",
+        "my-bucket",
+        "backups/mydb.dump",
+        CREDS,
+      );
+    });
+
+    it("exits with error when file does not exist", async () => {
+      mockGetCloudConfig.mockReturnValue(CLOUD_WITH_BUCKET);
+      const errorSpy = jest
+        .spyOn(console, "error")
+        .mockImplementation(() => undefined);
+      const exitSpy = jest
+        .spyOn(process, "exit")
+        .mockImplementation((() => undefined) as never);
+
+      const { invokeSubAction } = buildFakeProgram();
+      await invokeSubAction("upload <file>", "/tmp/missing.dump", {});
+
+      expect(exitSpy).toHaveBeenCalledWith(1);
+      errorSpy.mockRestore();
+      exitSpy.mockRestore();
+    });
+
+    it("exits with error when bucket is not configured", async () => {
+      mockGetCloudConfig.mockReturnValue({});
+      const errorSpy = jest
+        .spyOn(console, "error")
+        .mockImplementation(() => undefined);
+      const exitSpy = jest
+        .spyOn(process, "exit")
+        .mockImplementation((() => undefined) as never);
+
+      const { invokeSubAction } = buildFakeProgram();
+      await invokeSubAction("upload <file>", "/tmp/mydb.dump", {});
+
+      expect(exitSpy).toHaveBeenCalledWith(1);
+      errorSpy.mockRestore();
+      exitSpy.mockRestore();
+    });
+  });
+
   // --- delete subcommand ---
 
   describe("delete subcommand", () => {
