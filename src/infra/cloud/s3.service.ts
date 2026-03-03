@@ -69,8 +69,7 @@ export async function downloadFile(
   }
 
   const writer = createWriteStream(destPath);
-  // @ts-expect-error Body is a Readable in Node.js context
-  await pipeline(response.Body, writer);
+  await pipeline(response.Body as NodeJS.ReadableStream, writer);
 }
 
 export async function listObjects(
