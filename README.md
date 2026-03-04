@@ -12,12 +12,13 @@
 
 A fast, interactive CLI that removes friction from daily local database workflows, especially when juggling multiple instances and large datasets.
 
-![Version](https://img.shields.io/badge/version-0.8.2-blue.svg)
+![Version](https://img.shields.io/badge/version-0.9.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Node](https://img.shields.io/badge/node-18%2B-43853d.svg)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=flat&logo=postgresql&logoColor=white)
 ![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=flat&logo=mysql&logoColor=white)
 ![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat&logo=sqlite&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=flat&logo=mongodb&logoColor=white)
 [![GitHub Sponsors](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?style=flat&logo=github)](https://github.com/sponsors/eduardozaniboni)
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy_Me_A_Coffee-FFDD00?style=flat&logo=buy-me-a-coffee&logoColor=black)](https://www.buymeacoffee.com/eduardozaniboni)
 
@@ -39,11 +40,12 @@ herdux list
 
 ## Supported Engines
 
-| Engine     | Status | Client Tools Required           |
-| ---------- | ------ | ------------------------------- |
-| PostgreSQL | ✅     | `psql`, `pg_dump`, `pg_restore` |
-| MySQL      | ✅     | `mysql`, `mysqldump`            |
-| SQLite     | ✅     | `sqlite3`                       |
+| Engine     | Status | Client Tools Required                  |
+| ---------- | ------ | -------------------------------------- |
+| PostgreSQL | ✅     | `psql`, `pg_dump`, `pg_restore`        |
+| MySQL      | ✅     | `mysql`, `mysqldump`                   |
+| SQLite     | ✅     | `sqlite3`                              |
+| MongoDB    | ✅     | `mongosh`, `mongodump`, `mongorestore` |
 
 Use `--engine <name>` or configure the engine in a saved profile. PostgreSQL is the default.
 
@@ -51,6 +53,7 @@ Use `--engine <name>` or configure the engine in a saved profile. PostgreSQL is 
 herdux list                        # PostgreSQL (default)
 herdux --engine mysql list         # MySQL
 herdux --engine sqlite list        # SQLite (file-based, no server required)
+herdux --engine mongodb list       # MongoDB
 herdux list -s my-profile          # Using a saved server profile
 ```
 
@@ -91,6 +94,7 @@ Same commands. Any engine. Fewer flags. Fewer mistakes. Zero terminal fatigue.
 - **For PostgreSQL:** `psql`, `pg_dump`, `pg_restore` installed and in your `PATH`
 - **For MySQL:** `mysql`, `mysqldump` installed and in your `PATH`
 - **For SQLite:** `sqlite3` installed and in your `PATH`
+- **For MongoDB:** `mongosh`, `mongodump`, `mongorestore` installed and in your `PATH`
 
 > [!TIP]
 > Run `herdux doctor` after installation to verify everything is correctly set up.
@@ -191,8 +195,8 @@ Aborts immediately if any safety backup fails. No data is dropped without a conf
 Creates a timestamped backup in `~/.herdux/backups/` by default.
 
 ```bash
-herdux backup mydb                             # Engine-native format (.dump for PG, .db for SQLite, .sql for MySQL)
-herdux backup mydb --format plain              # Plain SQL (.sql)
+herdux backup mydb                             # Engine-native format (.dump for PG, .db for SQLite, .sql for MySQL, .mongodump for MongoDB)
+herdux backup mydb --format plain              # Plain SQL (.sql) — not supported by MongoDB
 herdux backup mydb --drop                      # Backup, then prompt to drop
 herdux backup mydb --drop --yes                # Backup + drop, no confirmation
 herdux backup mydb -o ./my-backups             # Custom output directory
@@ -232,18 +236,20 @@ The target database is automatically created if it does not exist.
 
 Inspects the contents of a backup file without connecting to a database. Completely offline.
 
-| Extension         | Output                                                                 |
-| ----------------- | ---------------------------------------------------------------------- |
-| `.dump`           | PostgreSQL custom format: full Table of Contents (`pg_restore --list`) |
-| `.tar`            | PostgreSQL tar format: full Table of Contents (`pg_restore --list`)    |
-| `.sql`            | Plain SQL (any engine): CREATE TABLE, VIEW, INDEX, SEQUENCE statements |
-| `.db` / `.sqlite` | SQLite database file: schema (`sqlite3 .schema`)                       |
+| Extension         | Output                                                                       |
+| ----------------- | ---------------------------------------------------------------------------- |
+| `.dump`           | PostgreSQL custom format: full Table of Contents (`pg_restore --list`)       |
+| `.tar`            | PostgreSQL tar format: full Table of Contents (`pg_restore --list`)          |
+| `.sql`            | Plain SQL (any engine): CREATE TABLE, VIEW, INDEX, SEQUENCE statements       |
+| `.db` / `.sqlite` | SQLite database file: schema (`sqlite3 .schema`)                             |
+| `.mongodump`      | MongoDB archive: collection list dry-run (`mongorestore --archive --dryRun`) |
 
 ```bash
-hdx inspect backup.dump           # Table of Contents of a PostgreSQL custom dump
-hdx inspect backup.tar            # Table of Contents of a PostgreSQL tar dump
-hdx inspect export.sql            # CREATE statements extracted from plain SQL
-hdx inspect mydb.db               # SQLite schema
+hdx inspect backup.dump                  # Table of Contents of a PostgreSQL custom dump
+hdx inspect backup.tar                   # Table of Contents of a PostgreSQL tar dump
+hdx inspect export.sql                   # CREATE statements extracted from plain SQL
+hdx inspect mydb.db                      # SQLite schema
+hdx inspect mydb_2026-03-04.mongodump    # MongoDB archive collection listing
 ```
 
 ---

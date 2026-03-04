@@ -9,6 +9,7 @@ import { execa } from "execa";
  *   .dump / .tar   PostgreSQL dump formats — pg_restore --list
  *   .sql           Plain SQL (any engine)  — extracts CREATE statements
  *   .db / .sqlite  SQLite database file    — sqlite3 .schema
+ *   .mongodump     MongoDB archive dump    — mongorestore --archive --dryRun
  *
  * @throws if the file does not exist, the extension is unsupported, or the
  *         underlying tool returns a non-zero exit code.
@@ -34,8 +35,12 @@ export async function inspectBackupFile(filePath: string): Promise<string> {
     return inspectSqliteFile(resolvedPath);
   }
 
+  if (ext === ".mongodump") {
+    return inspectMongodump(resolvedPath);
+  }
+
   throw new Error(
-    `Unsupported file type "${ext}". Supported extensions: .dump / .tar (PostgreSQL), .sql (any engine), .db / .sqlite (SQLite)`,
+    `Unsupported file type "${ext}". Supported extensions: .dump / .tar (PostgreSQL), .sql (any engine), .db / .sqlite (SQLite), .mongodump (MongoDB)`,
   );
 }
 
@@ -119,4 +124,22 @@ async function inspectSqliteFile(filePath: string): Promise<string> {
 
   const schema = result.stdout.trim();
   return schema || "(empty database — no tables defined)";
+}
+
+async function inspectMongodump(filePath: string): Promise<string> {
+  const result = await execa(
+    "mongorestore",
+    [`--archive=${filePath}`, "--gzip", "--dryRun", "--verbose"],
+    { reject: false },
+  );
+
+  if (result.exitCode !== 0) {
+    throw new Error(
+      `mongorestore failed: ${result.stderr || "unknown error"}\n\nMake sure mongorestore is installed and the file is a valid MongoDB archive dump.`,
+    );
+  }
+
+  // mongorestore --dryRun outputs collection info to stderr
+  const output = (result.stderr || result.stdout).trim();
+  return output || "(empty archive — no collections found)";
 }

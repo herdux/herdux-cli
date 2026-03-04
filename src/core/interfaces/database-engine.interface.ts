@@ -11,7 +11,7 @@ export interface DatabaseInfo {
   size?: string;
 }
 
-export type EngineType = "postgres" | "mysql" | "sqlite";
+export type EngineType = "postgres" | "mysql" | "sqlite" | "mongodb";
 
 export interface ConnectionOptions {
   host?: string;

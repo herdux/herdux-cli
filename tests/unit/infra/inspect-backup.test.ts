@@ -201,6 +201,50 @@ describe("inspectBackupFile()", () => {
     );
   });
 
+  // --- .mongodump ---
+
+  it("calls mongorestore --dryRun for .mongodump files", async () => {
+    mockExeca.mockResolvedValue({
+      stdout: "",
+      stderr: "preparing collections to restore from\nmydb.users: 100 docs",
+      exitCode: 0,
+    });
+
+    const result = await inspectBackupFile("/tmp/mydb_2026-03-01.mongodump");
+
+    expect(mockExeca).toHaveBeenCalledWith(
+      "mongorestore",
+      [
+        expect.stringContaining("mydb_2026-03-01.mongodump"),
+        "--gzip",
+        "--dryRun",
+        "--verbose",
+      ],
+      { reject: false },
+    );
+    expect(result).toContain("mydb.users");
+  });
+
+  it("returns empty archive message when mongorestore output is blank", async () => {
+    mockExeca.mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
+
+    const result = await inspectBackupFile("/tmp/empty.mongodump");
+
+    expect(result).toContain("empty archive");
+  });
+
+  it("throws when mongorestore fails on a .mongodump file", async () => {
+    mockExeca.mockResolvedValue({
+      stdout: "",
+      stderr: "Failed: archive file was not found",
+      exitCode: 1,
+    });
+
+    await expect(inspectBackupFile("/tmp/bad.mongodump")).rejects.toThrow(
+      "mongorestore failed",
+    );
+  });
+
   // --- Unsupported extension ---
 
   it("throws for unsupported file extensions with the full list", async () => {
@@ -209,6 +253,9 @@ describe("inspectBackupFile()", () => {
     );
     await expect(inspectBackupFile("/tmp/backup.bak")).rejects.toThrow(
       ".dump / .tar",
+    );
+    await expect(inspectBackupFile("/tmp/backup.bak")).rejects.toThrow(
+      ".mongodump",
     );
   });
 });

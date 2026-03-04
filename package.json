@@ -1,6 +1,6 @@
 {
   "name": "herdux-cli",
-  "version": "0.8.2",
+  "version": "0.9.0",
   "description": "Modern Database workflow CLI focused on developer experience, safety, and automation.",
   "repository": {
     "type": "git",
@@ -35,12 +35,16 @@
     "test:e2e:mysql:up": "docker compose -f infra/docker/compose.e2e-mysql.yml up -d --wait",
     "test:e2e:mysql:down": "docker compose -f infra/docker/compose.e2e-mysql.yml down -v --remove-orphans",
     "test:e2e:sqlite": "node --no-warnings --experimental-vm-modules node_modules/jest/bin/jest.js -- tests/e2e/sqlite/",
+    "test:e2e:mongodb": "node --no-warnings --experimental-vm-modules node_modules/jest/bin/jest.js -- tests/e2e/mongodb/",
+    "test:e2e:mongodb:up": "docker compose -f infra/docker/compose.e2e-mongodb.yml up -d --wait",
+    "test:e2e:mongodb:down": "docker compose -f infra/docker/compose.e2e-mongodb.yml down -v --remove-orphans",
     "prepare": "husky"
   },
   "keywords": [
     "postgresql",
     "mysql",
     "sqlite",
+    "mongodb",
     "cli",
     "database",
     "backup",

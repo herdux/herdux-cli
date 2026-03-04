@@ -22,6 +22,11 @@ describe("createEngine", () => {
     expect(engine.getEngineName()).toBe("SQLite");
   });
 
+  it('returns a MongodbEngine when called with "mongodb"', () => {
+    const engine = createEngine("mongodb");
+    expect(engine.getEngineName()).toBe("MongoDB");
+  });
+
   it("returns PostgresEngine as default when called without arguments", () => {
     const engine = createEngine();
     expect(engine.getEngineName()).toBe("PostgreSQL");
@@ -53,5 +58,11 @@ describe("createEngine", () => {
     expect(sqliteOpts.host).toMatch(/\.herdux[/\\]sqlite$/);
     expect(sqliteOpts.port).toBeUndefined();
     expect(sqliteOpts.user).toBeUndefined();
+
+    const mongodb = createEngine("mongodb");
+    expect(mongodb.getDefaultConnectionOptions()).toEqual({
+      host: "localhost",
+      port: "27017",
+    });
   });
 });

@@ -6,6 +6,18 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and 
 
 ---
 
+## [0.9.0] - 2026-03-04
+
+### Added
+
+- MongoDB engine support (`--engine mongodb`). Requires `mongosh`, `mongodump`, and `mongorestore` binaries.
+- Backup format: archive (`mongodump --archive --gzip`) producing `.mongodump` files. Plain format is not supported by MongoDB and will exit with a clear error.
+- `hdx inspect <file>.mongodump`: inspect MongoDB archive dumps offline via `mongorestore --dryRun`.
+- MongoDB added to `hdx cloud upload` and `hdx restore s3://` workflows (engine-agnostic path, no changes required).
+- `mongodb` added to npm keywords.
+
+---
+
 ## [0.8.2] - 2026-03-04
 
 ### Added
