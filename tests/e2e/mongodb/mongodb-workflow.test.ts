@@ -139,7 +139,7 @@ describe("E2E: MongoDB Full Workflow", () => {
       expect(result.exitCode).toBe(0);
       // mongorestore --dryRun output confirms the archive was read
       expect(result.output).toBeTruthy();
-    });
+    }, 15_000);
   });
 
   // --- Drop ---

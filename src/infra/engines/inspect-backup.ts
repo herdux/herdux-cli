@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from "fs";
-import { resolve, extname } from "path";
+import { resolve, extname, basename } from "path";
 import { execa } from "execa";
 
 /**
@@ -126,20 +126,43 @@ async function inspectSqliteFile(filePath: string): Promise<string> {
   return schema || "(empty database — no tables defined)";
 }
 
-async function inspectMongodump(filePath: string): Promise<string> {
-  const result = await execa(
-    "mongorestore",
-    [`--archive=${filePath}`, "--gzip", "--dryRun", "--verbose"],
-    { reject: false },
-  );
+function inspectMongodump(filePath: string): string {
+  // Read raw bytes to verify gzip magic header — no live connection required.
+  // mongorestore --dryRun still needs a live MongoDB instance to print collection
+  // info, so we inspect the archive offline instead.
+  const fileBuffer = readFileSync(filePath) as Buffer;
 
-  if (result.exitCode !== 0) {
+  // gzip magic: 1f 8b
+  if (
+    fileBuffer.length < 2 ||
+    fileBuffer[0] !== 0x1f ||
+    fileBuffer[1] !== 0x8b
+  ) {
     throw new Error(
-      `mongorestore failed: ${result.stderr || "unknown error"}\n\nMake sure mongorestore is installed and the file is a valid MongoDB archive dump.`,
+      `Not a valid mongodump archive: ${filePath}\n\nMake sure the file was created with: mongodump --archive=<file> --gzip`,
     );
   }
 
-  // mongorestore --dryRun outputs collection info to stderr
-  const output = (result.stderr || result.stdout).trim();
-  return output || "(empty archive — no collections found)";
+  const file = basename(filePath);
+  const dbName = file
+    .replace(/\.mongodump$/, "")
+    .replace(/_\d{4}-\d{2}-\d{2}$/, "");
+
+  const bytes = fileBuffer.length;
+  const sizeDisplay =
+    bytes >= 1024 * 1024
+      ? `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+      : bytes >= 1024
+        ? `${(bytes / 1024).toFixed(1)} KB`
+        : `${bytes} B`;
+
+  const lines = [
+    `Archive: ${file}`,
+    `Size: ${sizeDisplay}`,
+    `Format: MongoDB archive (mongodump --archive --gzip)`,
+  ];
+
+  if (dbName) lines.push(`Database: ${dbName}`);
+
+  return lines.join("\n");
 }

@@ -3,7 +3,8 @@ import { jest } from "@jest/globals";
 // --- Mocks ---
 
 const mockExistsSync = jest.fn<() => boolean>();
-const mockReadFileSync = jest.fn<() => string>();
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const mockReadFileSync = jest.fn<() => any>();
 
 jest.unstable_mockModule("fs", () => ({
   existsSync: mockExistsSync,
@@ -203,46 +204,37 @@ describe("inspectBackupFile()", () => {
 
   // --- .mongodump ---
 
-  it("calls mongorestore --dryRun for .mongodump files", async () => {
-    mockExeca.mockResolvedValue({
-      stdout: "",
-      stderr: "preparing collections to restore from\nmydb.users: 100 docs",
-      exitCode: 0,
-    });
+  it("returns archive info for .mongodump files without a live connection", async () => {
+    // Valid gzip magic bytes (1f 8b) followed by padding
+    mockReadFileSync.mockReturnValue(
+      Buffer.from([0x1f, 0x8b, 0x00, 0x00, 0x00]),
+    );
 
     const result = await inspectBackupFile("/tmp/mydb_2026-03-01.mongodump");
 
-    expect(mockExeca).toHaveBeenCalledWith(
-      "mongorestore",
-      [
-        expect.stringContaining("mydb_2026-03-01.mongodump"),
-        "--gzip",
-        "--dryRun",
-        "--verbose",
-      ],
-      { reject: false },
-    );
-    expect(result).toContain("mydb.users");
+    expect(mockExeca).not.toHaveBeenCalled();
+    expect(result).toContain("mydb_2026-03-01.mongodump");
+    expect(result).toContain("MongoDB archive");
+    expect(result).toContain("mydb");
   });
 
-  it("returns empty archive message when mongorestore output is blank", async () => {
-    mockExeca.mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 });
-
-    const result = await inspectBackupFile("/tmp/empty.mongodump");
-
-    expect(result).toContain("empty archive");
-  });
-
-  it("throws when mongorestore fails on a .mongodump file", async () => {
-    mockExeca.mockResolvedValue({
-      stdout: "",
-      stderr: "Failed: archive file was not found",
-      exitCode: 1,
-    });
+  it("throws when .mongodump file is not a valid gzip archive", async () => {
+    mockReadFileSync.mockReturnValue(Buffer.from([0x00, 0x00, 0x00]));
 
     await expect(inspectBackupFile("/tmp/bad.mongodump")).rejects.toThrow(
-      "mongorestore failed",
+      "Not a valid mongodump archive",
     );
+  });
+
+  it("shows size in the .mongodump archive info", async () => {
+    const buf = Buffer.alloc(2048);
+    buf[0] = 0x1f;
+    buf[1] = 0x8b;
+    mockReadFileSync.mockReturnValue(buf);
+
+    const result = await inspectBackupFile("/tmp/mydb.mongodump");
+
+    expect(result).toMatch(/\d+(\.\d+)? KB/);
   });
 
   // --- Unsupported extension ---
