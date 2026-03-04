@@ -31,7 +31,7 @@ type SavedDefaults = ConnectionOptions & {
  * Returns the selected server name, or undefined if the user selected
  * the default connection or no options were available.
  */
-async function promptServerSelection(
+export async function _promptServerSelection(
   servers: Record<string, ServerProfile>,
   serverNames: string[],
   savedDefaults: SavedDefaults,
@@ -91,7 +91,7 @@ async function promptServerSelection(
  * Determines the engine type from the CLI flag, server profile, or config defaults.
  * Priority: CLI flag > server profile engine > config default engine > "postgres"
  */
-function resolveEngineType(
+export function _resolveEngineType(
   rawEngine: EngineType | undefined,
   serverName: string | undefined,
   savedDefaults: SavedDefaults,
@@ -142,7 +142,7 @@ export async function resolveEngineAndConnection(
       );
     }
 
-    const selected = await promptServerSelection(
+    const selected = await _promptServerSelection(
       servers,
       serverNames,
       savedDefaults,
@@ -156,7 +156,7 @@ export async function resolveEngineAndConnection(
 
   // --- Step 2: Determine engine type ---
 
-  const engineType = resolveEngineType(
+  const engineType = _resolveEngineType(
     rawOpts.engine,
     serverName,
     savedDefaults,
