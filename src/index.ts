@@ -13,6 +13,7 @@ import { registerCleanCommand } from "./commands/clean.js";
 import { registerDoctorCommand } from "./commands/doctor.js";
 import { registerInspectCommand } from "./commands/inspect.js";
 import { registerDockerCommand } from "./commands/docker.js";
+import { registerCloudCommand } from "./commands/cloud.js";
 
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
@@ -85,5 +86,6 @@ registerCleanCommand(program);
 registerDoctorCommand(program);
 registerInspectCommand(program);
 registerDockerCommand(program);
+registerCloudCommand(program);
 
 program.parse();

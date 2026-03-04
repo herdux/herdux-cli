@@ -6,6 +6,44 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and 
 
 ---
 
+## [0.8.2] - 2026-03-04
+
+### Added
+
+- `hdx cloud list [path]` now defaults to directory mode: shows only immediate children (files and subdirectories) at the given level, similar to `ls`. Pass `--recursive` to list all objects regardless of depth.
+- `hdx cloud upload <file> [--prefix PREFIX]` command: upload an existing local file to the configured S3 bucket.
+- `hdx backup --no-keep` flag: delete the local backup file after a successful upload (requires `--upload`).
+- `hdx cloud delete` now verifies the key exists before attempting deletion. Exits with an error if the key is not found or is a directory prefix.
+
+### Fixed
+
+- `hdx cloud list <path>` now accepts path as a positional argument. Previously, passing a path without `--prefix` was silently ignored.
+- `hdx cloud download` now saves files to `~/.herdux/backups/` by default, creating the directory if needed. Previously, files were saved to the current working directory.
+
+---
+
+## [0.8.1] - 2026-03-03
+
+### Fixed
+
+- `hdx cloud list` no longer crashes with a stack overflow when the bucket contains a very large number of objects. Display is now capped at 200 items with a truncation notice.
+
+---
+
+## [0.8.0] - 2026-03-03
+
+### Added
+
+- `hdx cloud config` command: configure cloud storage settings (bucket, region, access-key, secret-key, endpoint). Credentials stored in `~/.herdux/config.json`; env vars `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` take priority.
+- `hdx cloud list [--prefix PREFIX]` command: list backup files in the configured S3 bucket. Displays key, size, and last modified date in a table.
+- `hdx cloud download <key> [-o DIR]` command: download a backup file from the configured S3 bucket to a local directory.
+- `hdx cloud delete <key> [-y]` command: delete a backup file from the configured S3 bucket. Requires confirmation unless `--yes` is passed.
+- `hdx backup --upload [prefix]` flag: after a successful backup, upload the file to the configured S3 bucket. Accepts an optional key prefix (e.g. `backups/`).
+- `hdx restore s3://bucket/key --db mydb`: restore directly from an S3 URL. Downloads to a temp file, restores, then cleans up automatically.
+- Support for any S3-compatible provider (Cloudflare R2, MinIO, DigitalOcean Spaces) via `hdx cloud config endpoint URL`.
+
+---
+
 ## [0.7.0] - 2026-03-02
 
 ### Added

@@ -12,7 +12,7 @@
 
 A fast, interactive CLI that removes friction from daily local database workflows, especially when juggling multiple instances and large datasets.
 
-![Version](https://img.shields.io/badge/version-0.7.0-blue.svg)
+![Version](https://img.shields.io/badge/version-0.8.2-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Node](https://img.shields.io/badge/node-18%2B-43853d.svg)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=flat&logo=postgresql&logoColor=white)
@@ -191,19 +191,23 @@ Aborts immediately if any safety backup fails. No data is dropped without a conf
 Creates a timestamped backup in `~/.herdux/backups/` by default.
 
 ```bash
-herdux backup mydb                       # Engine-native format (.dump for PG, .db for SQLite, .sql for MySQL)
-herdux backup mydb --format plain        # Plain SQL (.sql)
-herdux backup mydb --drop                # Backup, then prompt to drop
-herdux backup mydb --drop --yes          # Backup + drop, no confirmation
-herdux backup mydb -o ./my-backups       # Custom output directory
+herdux backup mydb                             # Engine-native format (.dump for PG, .db for SQLite, .sql for MySQL)
+herdux backup mydb --format plain              # Plain SQL (.sql)
+herdux backup mydb --drop                      # Backup, then prompt to drop
+herdux backup mydb --drop --yes                # Backup + drop, no confirmation
+herdux backup mydb -o ./my-backups             # Custom output directory
+herdux backup mydb --upload backups/           # Backup and upload to S3 prefix backups/
+herdux backup mydb --upload backups/ --no-keep # Backup, upload, then delete local file
 ```
 
-| Option                | Description                                           |
-| --------------------- | ----------------------------------------------------- |
-| `-F, --format <type>` | `custom` (default, engine-native) or `plain` (SQL)    |
-| `-d, --drop`          | Prompt to drop the database after a successful backup |
-| `-y, --yes`           | Skip drop confirmation (requires `--drop`)            |
-| `-o, --output <dir>`  | Output directory (default: `~/.herdux/backups`)       |
+| Option                | Description                                                       |
+| --------------------- | ----------------------------------------------------------------- |
+| `-F, --format <type>` | `custom` (default, engine-native) or `plain` (SQL)                |
+| `-d, --drop`          | Prompt to drop the database after a successful backup             |
+| `-y, --yes`           | Skip drop confirmation (requires `--drop`)                        |
+| `-o, --output <dir>`  | Output directory (default: `~/.herdux/backups`)                   |
+| `--upload [prefix]`   | Upload backup to S3 after creation (requires cloud config)        |
+| `--no-keep`           | Delete local backup after successful upload (requires `--upload`) |
 
 ---
 
@@ -254,6 +258,50 @@ hdx docker list --all       # Include stopped containers
 hdx docker start pg-dev     # Start a stopped container
 hdx docker stop pg-dev      # Stop a running container
 hdx docker stop pg-dev --remove   # Stop and remove the container
+```
+
+---
+
+### `herdux cloud`
+
+Manages backup files in S3-compatible cloud storage (AWS S3, Cloudflare R2, MinIO, DigitalOcean Spaces, and others).
+
+```bash
+# Configure
+hdx cloud config bucket my-bucket
+hdx cloud config region us-east-1
+hdx cloud config access-key AKIAIO...
+hdx cloud config secret-key wJalrX...
+hdx cloud config endpoint https://account.r2.cloudflarestorage.com  # optional, for non-AWS providers
+
+# Browse and manage backups in the bucket
+hdx cloud list                                    # Directory mode: list immediate children at root
+hdx cloud list backups/mydb/                      # List immediate children at path (positional)
+hdx cloud list --prefix backups/mydb/             # Same as above (flag form)
+hdx cloud list --recursive                        # List all objects in the bucket
+hdx cloud list backups/ --recursive               # List all objects under a prefix
+hdx cloud download backups/mydb_2026-03-03.dump              # Save to ~/.herdux/backups/
+hdx cloud download backups/mydb_2026-03-03.dump -o /tmp/     # Save to custom directory
+hdx cloud upload ./mydb_2026-03-03.dump                      # Upload file to bucket root
+hdx cloud upload ./mydb_2026-03-03.dump --prefix backups/    # Upload under a prefix
+hdx cloud delete backups/mydb_2026-03-03.dump     # Verifies existence, then asks for confirmation
+hdx cloud delete backups/mydb_2026-03-03.dump --yes
+
+# Backup directly to S3
+hdx backup mydb --upload backups/              # Backup and upload to prefix backups/
+hdx backup mydb --upload                       # Backup and upload to bucket root
+hdx backup mydb --upload backups/ --no-keep    # Backup, upload, then delete local file
+
+# Restore directly from S3
+hdx restore s3://my-bucket/backups/mydb_2026-03-03.dump --db mydb
+```
+
+Credentials can also be provided via env vars (recommended for CI/production):
+
+```bash
+export AWS_ACCESS_KEY_ID=AKIAIO...
+export AWS_SECRET_ACCESS_KEY=wJalrX...
+export AWS_DEFAULT_REGION=us-east-1
 ```
 
 ---

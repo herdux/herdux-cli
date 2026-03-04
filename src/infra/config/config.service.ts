@@ -20,10 +20,19 @@ export interface ServerProfile extends ConnectionOptions {
   engine?: EngineType;
 }
 
+export interface CloudConfig {
+  bucket?: string;
+  region?: string;
+  endpoint?: string;
+  access_key_id?: string;
+  secret_access_key?: string;
+}
+
 export interface HerduxConfig {
   default: ConnectionOptions & { output?: string; engine?: EngineType };
   servers: Record<string, ServerProfile>;
   scan_ports: string[];
+  cloud: CloudConfig;
 }
 
 function getEmptyConfig(): HerduxConfig {
@@ -31,6 +40,7 @@ function getEmptyConfig(): HerduxConfig {
     default: {},
     servers: {},
     scan_ports: [],
+    cloud: {},
   };
 }
 
@@ -46,6 +56,7 @@ export function loadConfig(): HerduxConfig {
       default: parsed.default ?? {},
       servers: parsed.servers ?? {},
       scan_ports: parsed.scan_ports ?? [],
+      cloud: parsed.cloud ?? {},
     };
   } catch {
     return getEmptyConfig();
@@ -117,4 +128,21 @@ export function resetConfig(): void {
 
 export function getConfigPath(): string {
   return CONFIG_FILE;
+}
+
+export function getCloudConfig(): CloudConfig {
+  const config = loadConfig();
+  return config.cloud;
+}
+
+export function setCloudConfig(key: keyof CloudConfig, value: string): void {
+  const config = loadConfig();
+  config.cloud[key] = value;
+  saveConfig(config);
+}
+
+export function resetCloudConfig(): void {
+  const config = loadConfig();
+  config.cloud = {};
+  saveConfig(config);
 }

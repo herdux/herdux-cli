@@ -35,9 +35,34 @@ jest.unstable_mockModule(
 const mockConfigGetDefault = jest
   .fn()
   .mockReturnValue({ output: "/default/backup/dir" });
+const mockGetCloudConfig = jest.fn().mockReturnValue({ bucket: "my-bucket" });
 
 jest.unstable_mockModule("../../../src/infra/config/config.service.js", () => ({
   getDefault: mockConfigGetDefault,
+  getCloudConfig: mockGetCloudConfig,
+}));
+
+const mockUploadFile = jest.fn<() => Promise<string>>();
+
+jest.unstable_mockModule("../../../src/infra/cloud/s3.service.js", () => ({
+  uploadFile: mockUploadFile,
+}));
+
+jest.unstable_mockModule(
+  "../../../src/infra/cloud/cloud-credential.js",
+  () => ({
+    resolveCloudCredentials: jest.fn().mockReturnValue({
+      accessKeyId: "AKIAIO",
+      secretAccessKey: "secret",
+      region: "us-east-1",
+    }),
+  }),
+);
+
+const mockUnlinkSync = jest.fn();
+
+jest.unstable_mockModule("fs", () => ({
+  unlinkSync: mockUnlinkSync,
 }));
 
 const mockSpinnerSucceed = jest.fn();
@@ -74,7 +99,14 @@ const { registerBackupCommand: registerBackupCmd } =
 
 type ActionFn = (
   database: string,
-  options: { output?: string; drop?: boolean; yes?: boolean; format: string },
+  options: {
+    output?: string;
+    drop?: boolean;
+    yes?: boolean;
+    format: string;
+    upload?: string | boolean;
+    keep: boolean;
+  },
 ) => Promise<void>;
 
 function buildFakeProgram(programOpts: Record<string, unknown> = {}) {
@@ -105,11 +137,13 @@ function buildFakeProgram(programOpts: Record<string, unknown> = {}) {
         drop?: boolean;
         yes?: boolean;
         format: string;
+        upload?: string | boolean;
+        keep?: boolean;
       } = { format: "custom" },
     ) => {
       if (!capturedAction) throw new Error("action not registered");
       try {
-        await capturedAction(database, options);
+        await capturedAction(database, { keep: true, ...options });
       } catch (err) {
         if (err instanceof Error && err.message !== "PROCESS_EXIT_MOCK")
           throw err;
@@ -356,6 +390,33 @@ describe.each(engines)(
         expect.stringContaining('does not support "custom" format'),
       );
       expect(processExitSpy).toHaveBeenCalledWith(1);
+    });
+
+    it("uploads to S3 and keeps local file by default with --upload", async () => {
+      mockUploadFile.mockResolvedValue("s3://my-bucket/backup.dump");
+      const { program } = buildFakeProgram();
+      registerBackupCmd(program as any);
+      await program.invokeAction("testdb", {
+        format: "custom",
+        upload: "backups/",
+      });
+
+      expect(mockUploadFile).toHaveBeenCalledTimes(1);
+      expect(mockUnlinkSync).not.toHaveBeenCalled();
+    });
+
+    it("deletes local file after upload when --no-keep is set", async () => {
+      mockUploadFile.mockResolvedValue("s3://my-bucket/backup.dump");
+      const { program } = buildFakeProgram();
+      registerBackupCmd(program as any);
+      await program.invokeAction("testdb", {
+        format: "custom",
+        upload: "backups/",
+        keep: false,
+      });
+
+      expect(mockUploadFile).toHaveBeenCalledTimes(1);
+      expect(mockUnlinkSync).toHaveBeenCalledWith("/output/path/backup.dump");
     });
   },
 );
