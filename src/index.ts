@@ -35,7 +35,10 @@ program
   .option("-U, --user <user>", "Database user")
   .option("-W, --password <password>", "Database password")
   .option("-s, --server <name>", "Use a named server profile from config")
-  .option("-e, --engine <type>", "Database engine (postgres, mysql)")
+  .option(
+    "-e, --engine <type>",
+    "Database engine (postgres, mysql, sqlite, mongodb)",
+  )
   .addHelpText(
     "after",
     `
@@ -64,7 +67,7 @@ program.hook("preAction", () => {
     }
   }
 
-  const validEngines = ["postgres", "mysql", "sqlite"];
+  const validEngines = ["postgres", "mysql", "sqlite", "mongodb"];
   if (opts.engine !== undefined && !validEngines.includes(opts.engine)) {
     console.error(
       chalk.red(

@@ -134,3 +134,43 @@ jobs:
 
       - name: Run E2E Tests for SQLite
         run: npm run test:e2e:sqlite
+
+  e2e-mongodb:
+    name: E2E Tests (MongoDB)
+    runs-on: ubuntu-latest
+    needs: lint-and-test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js 20.x
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20.x
+          cache: "npm"
+
+      - name: Install dependencies & Build
+        run: |
+          npm ci
+          npm run build
+          npm link
+
+      - name: Install MongoDB Tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gnupg curl
+          curl -fsSL https://www.mongodb.org/static/pgp/server-7.0.asc | sudo gpg -o /usr/share/keyrings/mongodb-server-7.0.gpg --dearmor
+          echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-7.0.gpg ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
+          sudo apt-get update
+          sudo apt-get install -y mongodb-mongosh mongodb-database-tools
+
+      - name: Start MongoDB Database (Docker)
+        run: npm run test:e2e:mongodb:up
+
+      - name: Run E2E Tests for MongoDB
+        run: npm run test:e2e:mongodb
+
+      - name: Teardown Database
+        if: always()
+        run: npm run test:e2e:mongodb:down

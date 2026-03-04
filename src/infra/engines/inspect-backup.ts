@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from "fs";
-import { resolve, extname } from "path";
+import { resolve, extname, basename } from "path";
 import { execa } from "execa";
 
 /**
@@ -9,6 +9,7 @@ import { execa } from "execa";
  *   .dump / .tar   PostgreSQL dump formats — pg_restore --list
  *   .sql           Plain SQL (any engine)  — extracts CREATE statements
  *   .db / .sqlite  SQLite database file    — sqlite3 .schema
+ *   .mongodump     MongoDB archive dump    — mongorestore --archive --dryRun
  *
  * @throws if the file does not exist, the extension is unsupported, or the
  *         underlying tool returns a non-zero exit code.
@@ -34,8 +35,12 @@ export async function inspectBackupFile(filePath: string): Promise<string> {
     return inspectSqliteFile(resolvedPath);
   }
 
+  if (ext === ".mongodump") {
+    return inspectMongodump(resolvedPath);
+  }
+
   throw new Error(
-    `Unsupported file type "${ext}". Supported extensions: .dump / .tar (PostgreSQL), .sql (any engine), .db / .sqlite (SQLite)`,
+    `Unsupported file type "${ext}". Supported extensions: .dump / .tar (PostgreSQL), .sql (any engine), .db / .sqlite (SQLite), .mongodump (MongoDB)`,
   );
 }
 
@@ -119,4 +124,45 @@ async function inspectSqliteFile(filePath: string): Promise<string> {
 
   const schema = result.stdout.trim();
   return schema || "(empty database — no tables defined)";
+}
+
+function inspectMongodump(filePath: string): string {
+  // Read raw bytes to verify gzip magic header — no live connection required.
+  // mongorestore --dryRun still needs a live MongoDB instance to print collection
+  // info, so we inspect the archive offline instead.
+  const fileBuffer = readFileSync(filePath) as Buffer;
+
+  // gzip magic: 1f 8b
+  if (
+    fileBuffer.length < 2 ||
+    fileBuffer[0] !== 0x1f ||
+    fileBuffer[1] !== 0x8b
+  ) {
+    throw new Error(
+      `Not a valid mongodump archive: ${filePath}\n\nMake sure the file was created with: mongodump --archive=<file> --gzip`,
+    );
+  }
+
+  const file = basename(filePath);
+  const dbName = file
+    .replace(/\.mongodump$/, "")
+    .replace(/_\d{4}-\d{2}-\d{2}$/, "");
+
+  const bytes = fileBuffer.length;
+  const sizeDisplay =
+    bytes >= 1024 * 1024
+      ? `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+      : bytes >= 1024
+        ? `${(bytes / 1024).toFixed(1)} KB`
+        : `${bytes} B`;
+
+  const lines = [
+    `Archive: ${file}`,
+    `Size: ${sizeDisplay}`,
+    `Format: MongoDB archive (mongodump --archive --gzip)`,
+  ];
+
+  if (dbName) lines.push(`Database: ${dbName}`);
+
+  return lines.join("\n");
 }

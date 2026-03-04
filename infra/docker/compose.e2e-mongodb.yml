@@ -1,0 +1,15 @@
+name: herdux-test-mongodb
+
+services:
+  mongodb-e2e:
+    image: mongo:7.0
+    container_name: herdux-e2e-mongodb
+    ports:
+      - "27099:27017"
+    tmpfs:
+      - /data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')", "--quiet"]
+      interval: 2s
+      timeout: 5s
+      retries: 15

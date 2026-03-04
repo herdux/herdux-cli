@@ -3,7 +3,8 @@ import { jest } from "@jest/globals";
 // --- Mocks ---
 
 const mockExistsSync = jest.fn<() => boolean>();
-const mockReadFileSync = jest.fn<() => string>();
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const mockReadFileSync = jest.fn<() => any>();
 
 jest.unstable_mockModule("fs", () => ({
   existsSync: mockExistsSync,
@@ -201,6 +202,41 @@ describe("inspectBackupFile()", () => {
     );
   });
 
+  // --- .mongodump ---
+
+  it("returns archive info for .mongodump files without a live connection", async () => {
+    // Valid gzip magic bytes (1f 8b) followed by padding
+    mockReadFileSync.mockReturnValue(
+      Buffer.from([0x1f, 0x8b, 0x00, 0x00, 0x00]),
+    );
+
+    const result = await inspectBackupFile("/tmp/mydb_2026-03-01.mongodump");
+
+    expect(mockExeca).not.toHaveBeenCalled();
+    expect(result).toContain("mydb_2026-03-01.mongodump");
+    expect(result).toContain("MongoDB archive");
+    expect(result).toContain("mydb");
+  });
+
+  it("throws when .mongodump file is not a valid gzip archive", async () => {
+    mockReadFileSync.mockReturnValue(Buffer.from([0x00, 0x00, 0x00]));
+
+    await expect(inspectBackupFile("/tmp/bad.mongodump")).rejects.toThrow(
+      "Not a valid mongodump archive",
+    );
+  });
+
+  it("shows size in the .mongodump archive info", async () => {
+    const buf = Buffer.alloc(2048);
+    buf[0] = 0x1f;
+    buf[1] = 0x8b;
+    mockReadFileSync.mockReturnValue(buf);
+
+    const result = await inspectBackupFile("/tmp/mydb.mongodump");
+
+    expect(result).toMatch(/\d+(\.\d+)? KB/);
+  });
+
   // --- Unsupported extension ---
 
   it("throws for unsupported file extensions with the full list", async () => {
@@ -209,6 +245,9 @@ describe("inspectBackupFile()", () => {
     );
     await expect(inspectBackupFile("/tmp/backup.bak")).rejects.toThrow(
       ".dump / .tar",
+    );
+    await expect(inspectBackupFile("/tmp/backup.bak")).rejects.toThrow(
+      ".mongodump",
     );
   });
 });
