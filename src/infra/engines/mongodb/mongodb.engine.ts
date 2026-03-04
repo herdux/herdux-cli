@@ -266,14 +266,12 @@ export class MongodbEngine implements IDatabaseEngine {
     const port = opts.port ?? "27017";
     const uri = buildMongoshURI({ ...opts, host, port }, name);
 
+    // MongoDB has no concept of an empty database — a database only exists when
+    // it contains at least one collection. We create a placeholder collection to
+    // materialize the database. It stays as a harmless marker collection.
     const result = await runCommand(
       "mongosh",
-      [
-        uri,
-        "--quiet",
-        "--eval",
-        "db.createCollection('_herdux_init'); db.getCollection('_herdux_init').drop()",
-      ],
+      [uri, "--quiet", "--eval", "db.createCollection('_herdux_init')"],
       { timeout: 10000 },
     );
 
