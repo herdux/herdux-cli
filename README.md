@@ -191,19 +191,23 @@ Aborts immediately if any safety backup fails. No data is dropped without a conf
 Creates a timestamped backup in `~/.herdux/backups/` by default.
 
 ```bash
-herdux backup mydb                       # Engine-native format (.dump for PG, .db for SQLite, .sql for MySQL)
-herdux backup mydb --format plain        # Plain SQL (.sql)
-herdux backup mydb --drop                # Backup, then prompt to drop
-herdux backup mydb --drop --yes          # Backup + drop, no confirmation
-herdux backup mydb -o ./my-backups       # Custom output directory
+herdux backup mydb                             # Engine-native format (.dump for PG, .db for SQLite, .sql for MySQL)
+herdux backup mydb --format plain              # Plain SQL (.sql)
+herdux backup mydb --drop                      # Backup, then prompt to drop
+herdux backup mydb --drop --yes                # Backup + drop, no confirmation
+herdux backup mydb -o ./my-backups             # Custom output directory
+herdux backup mydb --upload backups/           # Backup and upload to S3 prefix backups/
+herdux backup mydb --upload backups/ --no-keep # Backup, upload, then delete local file
 ```
 
-| Option                | Description                                           |
-| --------------------- | ----------------------------------------------------- |
-| `-F, --format <type>` | `custom` (default, engine-native) or `plain` (SQL)    |
-| `-d, --drop`          | Prompt to drop the database after a successful backup |
-| `-y, --yes`           | Skip drop confirmation (requires `--drop`)            |
-| `-o, --output <dir>`  | Output directory (default: `~/.herdux/backups`)       |
+| Option                | Description                                                       |
+| --------------------- | ----------------------------------------------------------------- |
+| `-F, --format <type>` | `custom` (default, engine-native) or `plain` (SQL)                |
+| `-d, --drop`          | Prompt to drop the database after a successful backup             |
+| `-y, --yes`           | Skip drop confirmation (requires `--drop`)                        |
+| `-o, --output <dir>`  | Output directory (default: `~/.herdux/backups`)                   |
+| `--upload [prefix]`   | Upload backup to S3 after creation (requires cloud config)        |
+| `--no-keep`           | Delete local backup after successful upload (requires `--upload`) |
 
 ---
 
@@ -270,17 +274,23 @@ hdx cloud config access-key AKIAIO...
 hdx cloud config secret-key wJalrX...
 hdx cloud config endpoint https://account.r2.cloudflarestorage.com  # optional, for non-AWS providers
 
-# Manage backups in the bucket
-hdx cloud list                            # List all backup files in the bucket
-hdx cloud list --prefix backups/mydb/    # Filter by key prefix
-hdx cloud download backups/mydb_2026-03-03.dump
-hdx cloud download backups/mydb_2026-03-03.dump -o /tmp/
-hdx cloud delete backups/mydb_2026-03-03.dump   # Asks for confirmation
+# Browse and manage backups in the bucket
+hdx cloud list                                    # Directory mode: list immediate children at root
+hdx cloud list backups/mydb/                      # List immediate children at path (positional)
+hdx cloud list --prefix backups/mydb/             # Same as above (flag form)
+hdx cloud list --recursive                        # List all objects in the bucket
+hdx cloud list backups/ --recursive               # List all objects under a prefix
+hdx cloud download backups/mydb_2026-03-03.dump              # Save to ~/.herdux/backups/
+hdx cloud download backups/mydb_2026-03-03.dump -o /tmp/     # Save to custom directory
+hdx cloud upload ./mydb_2026-03-03.dump                      # Upload file to bucket root
+hdx cloud upload ./mydb_2026-03-03.dump --prefix backups/    # Upload under a prefix
+hdx cloud delete backups/mydb_2026-03-03.dump     # Verifies existence, then asks for confirmation
 hdx cloud delete backups/mydb_2026-03-03.dump --yes
 
 # Backup directly to S3
-hdx backup mydb --upload backups/         # Backup and upload to prefix backups/
-hdx backup mydb --upload                  # Backup and upload to bucket root
+hdx backup mydb --upload backups/              # Backup and upload to prefix backups/
+hdx backup mydb --upload                       # Backup and upload to bucket root
+hdx backup mydb --upload backups/ --no-keep    # Backup, upload, then delete local file
 
 # Restore directly from S3
 hdx restore s3://my-bucket/backups/mydb_2026-03-03.dump --db mydb
