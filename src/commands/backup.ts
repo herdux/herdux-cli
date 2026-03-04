@@ -98,7 +98,7 @@ Examples:
             opts,
             cmdOpts.format as "custom" | "plain",
           );
-          spinner.succeed(`Backup saved: ${chalk.cyan(outputPath)}\n`);
+          spinner.succeed(`Backup saved at ${chalk.cyan(outputPath)}\n`);
 
           if (cmdOpts.upload !== undefined) {
             const cloud = config.getCloudConfig();
