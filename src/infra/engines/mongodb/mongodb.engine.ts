@@ -272,7 +272,7 @@ export class MongodbEngine implements IDatabaseEngine {
         uri,
         "--quiet",
         "--eval",
-        "db.createCollection('_herdux_init'); db.dropCollection('_herdux_init')",
+        "db.createCollection('_herdux_init'); db.getCollection('_herdux_init').drop()",
       ],
       { timeout: 10000 },
     );
