@@ -6,8 +6,9 @@ import type {
   DatabaseInstance,
   DatabaseInfo,
 } from "../../../core/interfaces/database-engine.interface.js";
-import { existsSync, mkdirSync } from "fs";
+import { existsSync, mkdirSync, readFileSync } from "fs";
 import { join, resolve } from "path";
+import { filterSqlDirectives } from "../sql-filter.js";
 import { execa } from "execa";
 import { checkPostgresClient, checkPgDump } from "./postgres-env.js";
 
@@ -425,17 +426,18 @@ export class PostgresEngine implements IDatabaseEngine {
       : resolvedPath.toLowerCase().endsWith(".sql");
 
     if (isPlainFormat) {
-      const args = [
-        ...buildConnectionArgs(opts),
-        "-d",
-        dbName,
-        "-f",
-        resolvedPath,
-      ];
+      // Filter \connect / CREATE DATABASE directives so psql cannot redirect to
+      // a different database (common in pg_dump -C and pgAdmin exports).
+      const filteredSql = filterSqlDirectives(
+        readFileSync(resolvedPath, "utf-8"),
+      );
+
+      const args = [...buildConnectionArgs(opts), "-d", dbName];
 
       const result = await runCommand("psql", args, {
         env: buildEnv(opts),
         timeout: 0,
+        stdinContent: filteredSql,
       });
 
       if (result.exitCode !== 0) {
