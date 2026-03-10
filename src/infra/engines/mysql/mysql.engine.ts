@@ -6,8 +6,9 @@ import type {
   DatabaseInfo,
   HealthCheck,
 } from "../../../core/interfaces/database-engine.interface.js";
-import { existsSync, mkdirSync } from "fs";
+import { existsSync, mkdirSync, readFileSync } from "fs";
 import { join, resolve } from "path";
+import { filterSqlDirectives } from "../sql-filter.js";
 import { execa } from "execa";
 import { checkMysqlClient, checkMysqlDump } from "./mysql-env.js";
 
@@ -385,12 +386,18 @@ export class MysqlEngine implements IDatabaseEngine {
       // Database might already exist — that's fine
     }
 
+    // Filter USE / CREATE DATABASE directives so mysql cannot redirect to a
+    // different database (common in mysqldump --databases exports).
+    const filteredSql = filterSqlDirectives(
+      readFileSync(resolvedPath, "utf-8"),
+    );
+
     const args = [...buildConnectionArgs(opts), dbName];
 
     const result = await runCommand("mysql", args, {
       env: buildEnv(opts),
       timeout: 0,
-      stdin: resolvedPath,
+      stdinContent: filteredSql,
     });
 
     if (result.exitCode !== 0) {

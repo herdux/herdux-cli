@@ -6,6 +6,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and 
 
 ---
 
+## [0.9.1] - 2026-03-10
+
+### Fixed
+
+- `restore` (PostgreSQL plain, MySQL): SQL files produced by `pg_dump -C`, pgAdmin, or `mysqldump --databases` embed `\connect`, `CREATE DATABASE`, and `USE` directives that redirected the client to the source database, ignoring `--db`. The plain SQL content is now filtered to strip these directives before being piped to the database client, so the restore always targets the database specified via `--db`.
+
+---
+
 ## [0.9.0] - 2026-03-04
 
 ### Added
